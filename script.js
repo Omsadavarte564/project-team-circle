@@ -1,4 +1,4 @@
-﻿// ================= STATE =================
+// ================= STATE =================
 let selectedChips = [];
 let currentResult = null;
 let patientQueue = [];
@@ -853,7 +853,8 @@ function markPatientChecked(patientObj) {
   appData.checkedPatients.unshift({
     ...patientObj,
     checkedAt: new Date().toISOString(),
-    checkedBy: currentUserName || 'doctor'
+    checkedBy: currentUserName || 'doctor',
+    doctorName: patientObj.doctorName || currentUserName || 'Doctor'
   });
   saveAppData();
 }
@@ -1233,39 +1234,51 @@ function renderBookSessionPage() {
 
 function populatePatientReviewDoctors() {
   const select = byId('patientReviewDoctor');
+  const hint = byId('patientReviewHint');
   if (!select) {
     return;
   }
 
   const doctorMap = {};
 
-  appData.bookings
-    .filter((booking) => booking.patientUsername === currentUserName)
-    .forEach((booking) => {
-      if (!booking.doctorId) {
+  appData.checkedPatients
+    .filter((entry) => entry.patientUsername === currentUserName)
+    .forEach((entry) => {
+      const checkedBy = (entry.checkedBy || '').trim();
+      if (!checkedBy) {
         return;
       }
-      if (!doctorMap[booking.doctorId]) {
-        doctorMap[booking.doctorId] = {
-          id: booking.doctorId,
-          name: booking.doctorName || (getDoctorById(booking.doctorId) || {}).name || 'Doctor'
+
+      const matchedDoctor =
+        doctorsDirectory.find((doctor) => doctor.username === checkedBy) ||
+        doctorsDirectory.find((doctor) => doctor.name === checkedBy);
+
+      const doctorId = entry.doctorId || (matchedDoctor ? matchedDoctor.id : checkedBy);
+      const doctorName = entry.doctorName || (matchedDoctor ? matchedDoctor.name : `Dr. ${checkedBy}`);
+
+      if (!doctorMap[doctorId]) {
+        doctorMap[doctorId] = {
+          id: doctorId,
+          name: doctorName
         };
       }
     });
 
-  doctorsDirectory.forEach((doctor) => {
-    if (!doctorMap[doctor.id]) {
-      doctorMap[doctor.id] = { id: doctor.id, name: doctor.name };
-    }
-  });
-
   const doctors = Object.keys(doctorMap).map((key) => doctorMap[key]);
 
   if (doctors.length === 0) {
-    select.innerHTML = '<option value="">No doctors available</option>';
+    select.innerHTML = '<option value="">No checked doctor yet</option>';
+    select.disabled = true;
+    if (hint) {
+      hint.textContent = 'You can review a doctor after the doctor has checked you.';
+    }
     return;
   }
 
+  select.disabled = false;
+  if (hint) {
+    hint.textContent = 'Only doctors who have already checked you are listed here.';
+  }
   select.innerHTML = doctors
     .map((doctor) => `<option value="${doctor.id}">${doctor.name}</option>`)
     .join('');
@@ -1290,15 +1303,31 @@ function savePatientReview(event) {
   const comment = commentEl ? commentEl.value.trim() : '';
 
   if (!doctorId || !rating || !comment) {
-    setFormMessage('patientReviewMsg', 'Please select doctor, rating, and comment.', 'error');
+    setFormMessage('patientReviewMsg', 'Please select a checked doctor, rating, and comment.', 'error');
+    return;
+  }
+
+  const checkedDoctorEntry = appData.checkedPatients.find((entry) => {
+    if (entry.patientUsername !== currentUserName) {
+      return false;
+    }
+
+    const checkedBy = (entry.checkedBy || '').trim();
+    const matchedDoctor =
+      doctorsDirectory.find((doctorItem) => doctorItem.username === checkedBy) ||
+      doctorsDirectory.find((doctorItem) => doctorItem.name === checkedBy);
+    const entryDoctorId = entry.doctorId || (matchedDoctor ? matchedDoctor.id : checkedBy);
+
+    return entryDoctorId === doctorId;
+  });
+
+  if (!checkedDoctorEntry) {
+    setFormMessage('patientReviewMsg', 'You can only review a doctor who has checked you.', 'error');
     return;
   }
 
   const doctor = getDoctorById(doctorId);
-  if (!doctor) {
-    setFormMessage('patientReviewMsg', 'Selected doctor is not available.', 'error');
-    return;
-  }
+  const doctorName = checkedDoctorEntry.doctorName || (doctor ? doctor.name : '');
 
   const profile = getPatientProfile(currentUserName);
   const patientName = profile.patientDisplayName || currentUserName || 'Patient';
@@ -1308,7 +1337,7 @@ function savePatientReview(event) {
     patientUsername: currentUserName,
     patientName,
     doctorId,
-    doctorName: doctor.name,
+    doctorName: doctorName || `Dr. ${checkedDoctorEntry.checkedBy || 'Doctor'}`,
     rating,
     comment,
     createdAt: new Date().toISOString()
@@ -1430,7 +1459,6 @@ function renderDoctorStats() {
 function renderDoctorDashboard() {
   renderDoctorStats();
   renderDoctorBookingList();
-  renderDoctorReviewList();
 }
 
 function scoreDoctorForCondition(doctor, conditionKey) {
