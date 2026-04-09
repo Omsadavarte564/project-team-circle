@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -151,7 +151,7 @@
     <div class="section-head">
       <div class="section-tag">Patient Hub</div>
       <div class="section-title">Patient Dashboard</div>
-      <div class="section-sub">Track your care progress, rate your doctor, and get the best doctor suggestions for your condition.</div>
+      <div class="section-sub">Track your care progress, review the doctor who checked you, and get the best doctor suggestions for your condition.</div>
     </div>
 
     <div class="queue-stats">
@@ -200,9 +200,10 @@
         <div class="card-head">Review Your Doctor</div>
         <form id="patientReviewForm" onsubmit="savePatientReview(event)">
           <div class="input-group">
-            <label class="input-label" for="patientReviewDoctor">Select Doctor</label>
+            <label class="input-label" for="patientReviewDoctor">Doctor Who Checked You</label>
             <select class="input-field" id="patientReviewDoctor"></select>
           </div>
+          <div id="patientReviewHint" class="form-msg"></div>
           <div class="input-group">
             <label class="input-label" for="patientReviewRating">Rating</label>
             <select class="input-field" id="patientReviewRating">
@@ -237,7 +238,7 @@
     <div class="section-head">
       <div class="section-tag">Doctor Hub</div>
       <div class="section-title">Doctor Dashboard</div>
-      <div class="section-sub">Monitor patient flow, check completed cases, manage bookings, and view patient feedback.</div>
+      <div class="section-sub">Monitor patient flow, check completed cases, and manage session requests.</div>
     </div>
 
     <div class="queue-stats">
@@ -263,11 +264,6 @@
       <div class="card">
         <div class="card-head">Session Registration Requests</div>
         <div id="doctorBookingList" class="stack-list"></div>
-      </div>
-
-      <div class="card">
-        <div class="card-head">Recent Patient Feedback</div>
-        <div id="doctorReviewList" class="stack-list"></div>
       </div>
     </div>
   </div>
