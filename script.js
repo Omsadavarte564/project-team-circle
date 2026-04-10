@@ -1,4 +1,4 @@
-﻿// ================= STATE =================
+// ================= STATE =================
 let selectedChips = [];
 let currentResult = null;
 let patientQueue = [];
@@ -710,15 +710,15 @@ function refreshDashboardNavbarLanguage() {
 
 function applyLanguageToStaticUI() {
   uiBindings.forEach((binding) => {
-    setTextIfPresent(binding.selector, translatedOrNull(binding.key));
+    setTextIfPresent(binding.selector, t(binding.key));
   });
 
   uiOptionBindings.forEach((binding) => {
-    setTextIfPresent(binding.selector, translatedOrNull(binding.key));
+    setTextIfPresent(binding.selector, t(binding.key));
   });
 
   uiHtmlBindings.forEach((binding) => {
-    setHtmlIfPresent(binding.selector, translatedOrNull(binding.key));
+    setHtmlIfPresent(binding.selector, t(binding.key));
   });
 
   setNavButtonText('home', 'nav.home');
