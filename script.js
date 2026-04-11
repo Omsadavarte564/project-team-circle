@@ -497,7 +497,8 @@ function defaultAppData() {
     doctorReviews: [],
     emergencyRequests: [],
     remindersByUser: {},
-    patientProfiles: {}
+    patientProfiles: {},
+    patientDetails: []
   };
 }
 
@@ -524,7 +525,8 @@ function loadAppData() {
       patientProfiles:
         parsed && typeof parsed.patientProfiles === 'object' && parsed.patientProfiles !== null
           ? parsed.patientProfiles
-          : {}
+          : {},
+      patientDetails: Array.isArray(parsed && parsed.patientDetails) ? parsed.patientDetails : []
     };
   } catch (error) {
     return fallback;
@@ -1517,7 +1519,8 @@ async function loginUser(event) {
         doctorReviews: Array.isArray(firestoreData.doctorReviews) ? firestoreData.doctorReviews : [],
         emergencyRequests: Array.isArray(firestoreData.emergencyRequests) ? firestoreData.emergencyRequests : [],
         remindersByUser: (firestoreData.remindersByUser && typeof firestoreData.remindersByUser === 'object') ? firestoreData.remindersByUser : {},
-        patientProfiles: (firestoreData.patientProfiles && typeof firestoreData.patientProfiles === 'object') ? firestoreData.patientProfiles : {}
+        patientProfiles: (firestoreData.patientProfiles && typeof firestoreData.patientProfiles === 'object') ? firestoreData.patientProfiles : {},
+        patientDetails: Array.isArray(firestoreData.patientDetails) ? firestoreData.patientDetails : []
       };
     } else {
       // Fallback to localStorage if Firestore has no data
@@ -1586,6 +1589,12 @@ async function loginUser(event) {
   renderDoctorDashboard();
   renderBookSessionPage();
   renderPatientDashboard();
+
+  // Load and render doctors directory
+  loadRegisteredDoctors().then(function() {
+    renderDoctorsDirectory();
+  });
+
   goPage('home');
   showToast(t('auth.success.login', { portal: portalAccess[role].label }), 'success');
 
@@ -1702,6 +1711,9 @@ function goPage(id) {
     activeTab.classList.add('active');
   }
 
+  if (id === 'home') {
+    renderDoctorsDirectory();
+  }
   if (id === 'queue') {
     renderQueue();
   }
@@ -2139,6 +2151,11 @@ function updateBookingStatus(bookingId, status) {
   booking.updatedAt = new Date().toISOString();
   saveAppData();
 
+  // Auto-add to queue when approved
+  if (status === 'Approved') {
+    autoAddApprovedBookingsToQueue(bookingId);
+  }
+
   renderDoctorDashboard();
   renderBookSessionPage();
   renderPatientDashboard();
@@ -2544,9 +2561,243 @@ function renderDoctorStats() {
   if (ratingEl) ratingEl.textContent = avgRating.toFixed(1);
 }
 
+// ================= DOCTORS DIRECTORY =================
+let registeredDoctorsCache = [];
+
+async function loadRegisteredDoctors() {
+  if (typeof fbLoadRegisteredDoctors === 'function') {
+    try {
+      registeredDoctorsCache = await fbLoadRegisteredDoctors();
+    } catch (err) {
+      console.warn('Failed to load registered doctors:', err);
+      registeredDoctorsCache = [];
+    }
+  }
+}
+
+function renderDoctorsDirectory() {
+  const grid = byId('doctorsDirectoryGrid');
+  if (!grid) return;
+
+  let html = '';
+
+  // Local doctors (from hardcoded directory)
+  doctorsDirectory.forEach(function(doctor) {
+    var specialties = doctor.specialties.map(function(s) {
+      return typeof getSpecialtyLabel === 'function' ? getSpecialtyLabel(s) : s;
+    }).join(' · ');
+
+    html += '<div class="doctor-card">' +
+      '<div class="doctor-card-avatar">👨‍⚕️</div>' +
+      '<div class="doctor-card-name">' + doctor.name + '</div>' +
+      '<div class="doctor-card-spec">' + specialties + '</div>' +
+      '<div class="doctor-card-meta">' +
+        doctor.rating + '★ · ' + doctor.experience + ' years experience<br>' +
+        '🏥 ' + localizeHospitalNameByValue(doctor.hospital) +
+      '</div>' +
+      '<span class="doctor-card-badge badge-local">Local Doctor</span>' +
+    '</div>';
+  });
+
+  // Registered doctors (from Firebase)
+  registeredDoctorsCache.forEach(function(doc) {
+    // Skip default users
+    if (doc.isDefault) return;
+
+    var displayName = doc.displayName || doc.username || 'Doctor';
+    var location = [doc.address, doc.state].filter(Boolean).join(', ') || 'MedReach Platform';
+
+    html += '<div class="doctor-card">' +
+      '<div class="doctor-card-avatar">🩺</div>' +
+      '<div class="doctor-card-name">Dr. ' + displayName.charAt(0).toUpperCase() + displayName.slice(1) + '</div>' +
+      '<div class="doctor-card-spec">General Practitioner</div>' +
+      '<div class="doctor-card-meta">' +
+        (doc.phone ? '📞 ' + doc.phone + '<br>' : '') +
+        (doc.email ? '✉️ ' + doc.email + '<br>' : '') +
+        '📍 ' + location +
+      '</div>' +
+      '<span class="doctor-card-badge badge-registered">Registered Doctor</span>' +
+    '</div>';
+  });
+
+  if (!html) {
+    html = '<div style="color:var(--text-muted);padding:20px;text-align:center;">No doctors available yet.</div>';
+  }
+
+  grid.innerHTML = html;
+}
+
+// ================= PATIENT DETAILS (Doctor adds) =================
+function populateDetailsBookingSelect() {
+  var select = byId('detailsBookingSelect');
+  if (!select) return;
+
+  var bookings = appData.bookings.filter(function(b) {
+    return b.status === 'Approved' || b.status === 'Pending' || b.status === 'Completed';
+  }).sort(function(a, b) {
+    return a.createdAt < b.createdAt ? 1 : -1;
+  });
+
+  if (bookings.length === 0) {
+    select.innerHTML = '<option value="">No patient bookings available</option>';
+    return;
+  }
+
+  select.innerHTML = bookings.map(function(b) {
+    var condLabel = getConditionLabel(b.disease);
+    var dateLabel = formatSessionDate(b.date, b.time);
+    return '<option value="' + b.id + '">' + b.patientName + ' — ' + condLabel + ' (' + dateLabel + ')</option>';
+  }).join('');
+}
+
+function savePatientDetails(event) {
+  if (event) event.preventDefault();
+
+  if (!ensureDoctorAccess('Add patient details')) return;
+
+  var selectEl = byId('detailsBookingSelect');
+  var diagnosisEl = byId('detailsDiagnosis');
+  var prescriptionEl = byId('detailsPrescription');
+  var notesEl = byId('detailsNotes');
+
+  var bookingId = selectEl ? Number(selectEl.value) : 0;
+  var diagnosis = diagnosisEl ? diagnosisEl.value.trim() : '';
+  var prescription = prescriptionEl ? prescriptionEl.value.trim() : '';
+  var notes = notesEl ? notesEl.value.trim() : '';
+
+  if (!bookingId) {
+    setFormMessage('detailsMsg', 'Please select a patient booking.', 'error');
+    return;
+  }
+
+  if (!diagnosis) {
+    setFormMessage('detailsMsg', 'Please enter a diagnosis.', 'error');
+    return;
+  }
+
+  var booking = appData.bookings.find(function(b) { return b.id === bookingId; });
+  if (!booking) {
+    setFormMessage('detailsMsg', 'Booking not found.', 'error');
+    return;
+  }
+
+  // Store patient details in appData
+  if (!appData.patientDetails) appData.patientDetails = [];
+
+  var detail = {
+    id: Date.now() + Math.floor(Math.random() * 1000),
+    bookingId: bookingId,
+    patientName: booking.patientName,
+    patientUsername: booking.patientUsername,
+    patientAge: booking.patientAge,
+    disease: booking.disease,
+    diagnosis: diagnosis,
+    prescription: prescription,
+    doctorNotes: notes,
+    doctorName: currentUserName,
+    sessionDate: booking.date,
+    sessionTime: booking.time,
+    createdAt: new Date().toISOString()
+  };
+
+  appData.patientDetails.unshift(detail);
+
+  // Mark booking as completed
+  booking.status = 'Completed';
+  booking.updatedAt = new Date().toISOString();
+
+  saveAppData();
+
+  // Also save to Firebase
+  if (typeof fbSavePatientDetails === 'function') {
+    fbSavePatientDetails(detail.id, detail);
+  }
+
+  // Clear form
+  if (diagnosisEl) diagnosisEl.value = '';
+  if (prescriptionEl) prescriptionEl.value = '';
+  if (notesEl) notesEl.value = '';
+
+  setFormMessage('detailsMsg', '✅ Patient details saved successfully!', 'success');
+  renderDoctorDashboard();
+  renderBookSessionPage();
+  renderPatientDashboard();
+  showToast('✅ Patient details saved for ' + booking.patientName, 'success');
+}
+
+function renderSavedPatientDetails() {
+  var list = byId('savedPatientDetailsList');
+  if (!list) return;
+
+  var details = Array.isArray(appData.patientDetails) ? appData.patientDetails : [];
+
+  if (details.length === 0) {
+    list.innerHTML = '<div class="stack-item"><div class="stack-item-sub">No patient records yet. Add details from the form above.</div></div>';
+    return;
+  }
+
+  list.innerHTML = details.slice(0, 10).map(function(d) {
+    return '<div class="patient-record-item">' +
+      '<div class="stack-item-title" style="margin-bottom:8px;">' + (d.patientName || 'Patient') + ' · ' + (d.patientAge || '') + ' yrs</div>' +
+      '<div class="record-label">Disease</div>' +
+      '<div class="record-value">' + getConditionLabel(d.disease) + '</div>' +
+      '<div class="record-label">Diagnosis</div>' +
+      '<div class="record-value">' + (d.diagnosis || '-') + '</div>' +
+      '<div class="record-label">Prescription</div>' +
+      '<div class="record-value">' + (d.prescription || '-') + '</div>' +
+      (d.doctorNotes ? '<div class="record-label">Doctor\'s Notes</div><div class="record-value">' + d.doctorNotes + '</div>' : '') +
+      '<div style="font-size:11px;color:var(--text-muted);margin-top:6px;">📅 ' + new Date(d.createdAt).toLocaleString(getCurrentLocale(), { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + '</div>' +
+    '</div>';
+  }).join('');
+}
+
+// ================= AUTO-ADD APPROVED BOOKINGS TO QUEUE =================
+function autoAddApprovedBookingsToQueue(bookingId) {
+  var booking = appData.bookings.find(function(b) { return b.id === bookingId; });
+  if (!booking) return;
+
+  // Check if this booking is already in the queue
+  var alreadyInQueue = patientQueue.some(function(p) {
+    return p.bookingId === bookingId;
+  });
+
+  if (alreadyInQueue) return;
+
+  var entry = {
+    id: Date.now(),
+    bookingId: bookingId,
+    patientUsername: booking.patientUsername || null,
+    name: booking.patientName,
+    condition: booking.disease,
+    conditionKey: booking.disease,
+    severity: 'medium',
+    time: new Date().toLocaleTimeString(getCurrentLocale(), { hour: '2-digit', minute: '2-digit' }),
+    wait: getWaitLabelBySeverity('medium'),
+    caseStudy: {
+      disease: getConditionLabel(booking.disease),
+      recoveryDetails: booking.notes || 'Booked session - ' + formatSessionDate(booking.date, booking.time),
+      addedBy: 'Booking System',
+      addedAt: new Date().toISOString()
+    }
+  };
+
+  patientQueue.push(entry);
+  patientQueue.sort(function(a, b) {
+    var order = { critical: 0, medium: 1, low: 2 };
+    return (order[a.severity] || 2) - (order[b.severity] || 2);
+  });
+
+  recordVisit(entry);
+  saveAppData();
+  renderQueue();
+  showToast('📋 ' + booking.patientName + ' added to doctor queue from booking', 'info');
+}
+
 function renderDoctorDashboard() {
   renderDoctorStats();
   renderDoctorBookingList();
+  populateDetailsBookingSelect();
+  renderSavedPatientDetails();
 }
 
 function scoreDoctorForCondition(doctor, conditionKey) {

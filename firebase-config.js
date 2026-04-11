@@ -197,4 +197,47 @@ async function fbInitDefaultUsers(defaultCredentials) {
   await Promise.all(promises);
 }
 
+// ================= REGISTERED DOCTORS =================
+
+/**
+ * Load all registered doctors from Firestore.
+ * Returns an array of doctor profile objects.
+ */
+async function fbLoadRegisteredDoctors() {
+  try {
+    const snapshot = await fbDb.collection('users').where('role', '==', 'doctor').get();
+    var doctors = [];
+    snapshot.forEach(function(doc) {
+      var data = doc.data();
+      doctors.push({
+        uid: doc.id,
+        username: data.username || '',
+        displayName: data.displayName || data.username || 'Doctor',
+        phone: data.phone || '',
+        email: data.realEmail || '',
+        state: data.state || '',
+        address: data.address || '',
+        isDefault: !!data.isDefault,
+        createdAt: data.createdAt || null
+      });
+    });
+    return doctors;
+  } catch (error) {
+    console.warn('Failed to load registered doctors:', error);
+    return [];
+  }
+}
+
+/**
+ * Save patient details (diagnosis, prescription, notes) added by a doctor.
+ */
+async function fbSavePatientDetails(bookingId, details) {
+  try {
+    var cleanDetails = JSON.parse(JSON.stringify(details));
+    await fbDb.collection('patientDetails').doc(String(bookingId)).set(cleanDetails);
+  } catch (error) {
+    console.warn('Failed to save patient details:', error);
+  }
+}
+
 console.log('🔥 Firebase initialized for MedReach');

@@ -194,6 +194,18 @@
           <div class="mod-desc" id="homeCardDescBook">Register and book a session with available doctors directly from your patient portal.</div>
         </div>
       </div>
+
+      <!-- Our Doctors Section -->
+      <div class="doctors-directory-section">
+        <div class="section-head" style="margin-top:40px;">
+          <div class="section-tag" id="doctorsDirectoryTag">Our Team</div>
+          <div class="section-title" id="doctorsDirectoryTitle">👨‍⚕️ Our Doctors</div>
+          <div class="section-sub" id="doctorsDirectorySub">Meet our experienced medical professionals — local specialists and registered practitioners ready to serve you.</div>
+        </div>
+        <div class="doctors-grid" id="doctorsDirectoryGrid">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
     </div>
   </div>
 
@@ -314,10 +326,37 @@
       </div>
     </div>
 
-    <div class="dashboard-grid single-card-grid">
+    <div class="dashboard-grid">
       <div class="card">
         <div class="card-head" id="doctorCardHeadSessionRequests">Session Registration Requests</div>
         <div id="doctorBookingList" class="stack-list"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head" id="doctorCardHeadPatientDetails">📋 Add Patient Details</div>
+        <form id="patientDetailsForm" onsubmit="savePatientDetails(event)">
+          <div class="input-group">
+            <label class="input-label" for="detailsBookingSelect">Select Patient (from bookings)</label>
+            <select class="input-field" id="detailsBookingSelect"></select>
+          </div>
+          <div class="input-group">
+            <label class="input-label" for="detailsDiagnosis">Diagnosis</label>
+            <input type="text" class="input-field" id="detailsDiagnosis" placeholder="e.g. Viral Fever, Upper Respiratory Infection">
+          </div>
+          <div class="input-group">
+            <label class="input-label" for="detailsPrescription">Prescription</label>
+            <textarea class="input-field" id="detailsPrescription" rows="3" placeholder="e.g. Paracetamol 500mg x 3 times daily for 5 days..."></textarea>
+          </div>
+          <div class="input-group">
+            <label class="input-label" for="detailsNotes">Doctor's Notes</label>
+            <textarea class="input-field" id="detailsNotes" rows="2" placeholder="Additional observations or follow-up instructions..."></textarea>
+          </div>
+          <button class="btn-primary" type="submit">💾 Save Patient Details</button>
+          <div id="detailsMsg" class="form-msg"></div>
+        </form>
+        <div class="divider" style="margin:20px 0;"></div>
+        <div class="card-head" id="doctorCardHeadSavedDetails">📑 Saved Patient Records</div>
+        <div id="savedPatientDetailsList" class="stack-list"></div>
       </div>
     </div>
   </div>

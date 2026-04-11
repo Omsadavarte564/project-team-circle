@@ -1216,3 +1216,120 @@ textarea.input-field {
     margin: 0 auto;
   }
 }
+
+/* ---- DOCTORS DIRECTORY ---- */
+.doctors-directory-section {
+  margin-top: 16px;
+}
+.doctors-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+.doctor-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+  transition: all 0.25s;
+  position: relative;
+  overflow: hidden;
+}
+.doctor-card:hover {
+  border-color: rgba(0,212,170,0.4);
+  transform: translateY(-2px);
+}
+.doctor-card::before {
+  content: '';
+  position: absolute;
+  top: -30px;
+  right: -30px;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  opacity: 0.06;
+  background: var(--accent);
+  transition: opacity 0.2s;
+}
+.doctor-card:hover::before {
+  opacity: 0.12;
+}
+.doctor-card-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(0,212,170,0.2), rgba(108,99,255,0.2));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  margin-bottom: 12px;
+}
+.doctor-card-name {
+  font-family: var(--font-head);
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 4px;
+  color: var(--text);
+}
+.doctor-card-spec {
+  font-size: 12px;
+  color: var(--accent);
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.doctor-card-meta {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+.doctor-card-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 8px;
+}
+.badge-local {
+  background: rgba(0,212,170,0.12);
+  color: var(--accent);
+  border: 1px solid rgba(0,212,170,0.25);
+}
+.badge-registered {
+  background: rgba(108,99,255,0.12);
+  color: var(--accent4);
+  border: 1px solid rgba(108,99,255,0.25);
+}
+
+/* ---- PATIENT DETAILS RECORDS ---- */
+.patient-record-item {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 10px;
+  transition: border-color 0.2s;
+}
+.patient-record-item:hover {
+  border-color: rgba(0,212,170,0.3);
+}
+.record-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+}
+.record-value {
+  font-size: 13px;
+  color: var(--text);
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+.record-value:last-child {
+  margin-bottom: 0;
+}
