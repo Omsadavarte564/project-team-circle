@@ -115,9 +115,14 @@ function getLanguageNameForAI(code) {
 }
 
 // ---- API Key Management ----
+function isKeyInjected() {
+  // A real Groq key starts with 'gsk_' and is long. The placeholder is '__GROQ_API_KEY__'.
+  return DEFAULT_GROQ_KEY && DEFAULT_GROQ_KEY.length > 20 && DEFAULT_GROQ_KEY.indexOf('gsk_') === 0;
+}
+
 function getAIApiKey() {
   // Check if the build-time key was injected (not the placeholder)
-  if (DEFAULT_GROQ_KEY && DEFAULT_GROQ_KEY !== '__GROQ_API_KEY__') return DEFAULT_GROQ_KEY;
+  if (isKeyInjected()) return DEFAULT_GROQ_KEY;
   try { return localStorage.getItem(AI_API_KEY_STORAGE) || ''; }
   catch (e) { return ''; }
 }
@@ -152,7 +157,7 @@ function refreshAIKeyUI() {
   var section = document.getElementById('aiKeySection');
   var status = document.getElementById('aiKeyStatus');
   // If a real key was injected at build time, hide both sections completely
-  if (DEFAULT_GROQ_KEY && DEFAULT_GROQ_KEY !== '__GROQ_API_KEY__') {
+  if (isKeyInjected()) {
     if (section) section.classList.add('hidden');
     if (status) status.classList.add('hidden');
     return;
