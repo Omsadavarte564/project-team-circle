@@ -116,7 +116,8 @@ function getLanguageNameForAI(code) {
 
 // ---- API Key Management ----
 function getAIApiKey() {
-  if (DEFAULT_GROQ_KEY) return DEFAULT_GROQ_KEY;
+  // Check if the build-time key was injected (not the placeholder)
+  if (DEFAULT_GROQ_KEY && DEFAULT_GROQ_KEY !== '__GROQ_API_KEY__') return DEFAULT_GROQ_KEY;
   try { return localStorage.getItem(AI_API_KEY_STORAGE) || ''; }
   catch (e) { return ''; }
 }
@@ -150,8 +151,8 @@ function showAIKeyInput() {
 function refreshAIKeyUI() {
   var section = document.getElementById('aiKeySection');
   var status = document.getElementById('aiKeyStatus');
-  // If hardcoded key exists, hide both sections completely
-  if (DEFAULT_GROQ_KEY) {
+  // If a real key was injected at build time, hide both sections completely
+  if (DEFAULT_GROQ_KEY && DEFAULT_GROQ_KEY !== '__GROQ_API_KEY__') {
     if (section) section.classList.add('hidden');
     if (status) status.classList.add('hidden');
     return;
