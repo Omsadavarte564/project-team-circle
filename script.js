@@ -1,4 +1,4 @@
-﻿// ================= STATE =================
+// ================= STATE =================
 let selectedChips = [];
 let currentResult = null;
 let patientQueue = [];
@@ -8,6 +8,7 @@ let ambulanceRunning = false;
 
 let currentUserRole = null;
 let currentUserName = '';
+let currentUserUid = null;
 let currentLanguage = 'en';
 
 const AUTH_STORAGE_KEY = 'medreach_auth_users_v1';
@@ -33,10 +34,9 @@ const uiBindings = [
   { selector: '#loginForm label[for="loginPassword"]', key: 'login.password' },
   { selector: '#loginForm .login-btn', key: 'login.login_button' },
   { selector: '#registerPromptTitle', key: 'login.new_registration' },
-  { selector: '.auth-link-row .auth-link-btn:nth-of-type(1)', key: 'login.register_patient' },
-  { selector: '.auth-link-row .auth-link-btn:nth-of-type(2)', key: 'login.register_doctor' },
+  { selector: '#loginTab', key: 'tabs.login' },
+  { selector: '#registerTab', key: 'tabs.register' },
   { selector: '#registerFormTitle', key: 'register.patient_title' },
-  { selector: '.auth-link-close', key: 'register.back_to_login' },
   { selector: '#registerForm label[for="registerRole"]', key: 'register.register_as' },
   { selector: '#registerForm label[for="registerUsername"]', key: 'register.username' },
   { selector: '#registerForm label[for="registerPassword"]', key: 'register.password' },
@@ -46,6 +46,10 @@ const uiBindings = [
   { selector: '#registerForm label[for="registerEmail"]', key: 'register.email' },
   { selector: '#registerForm label[for="registerState"]', key: 'register.state' },
   { selector: '#registerForm label[for="registerAddress"]', key: 'register.address' },
+  { selector: '#getLocationBtn', key: 'register.get_live_location' },
+  { selector: '#doctorFields .auth-title', key: 'register.doctor_details' },
+  { selector: '#registerForm label[for="registerQualification"]', key: 'register.qualification' },
+  { selector: '#registerForm label[for="registerDoctorLocation"]', key: 'register.doctor_location' },
   { selector: '#registerForm .register-btn', key: 'register.create_account' },
   { selector: '.nav-tab[data-page="home"]', key: 'nav.home' },
   { selector: '.nav-tab[data-page="patient-dashboard"]', key: 'nav.patient_dashboard' },
@@ -175,7 +179,25 @@ const uiBindings = [
   { selector: '#page-reminder label[for="medFreq"]', key: 'reminder.frequency' },
   { selector: '#page-reminder label[for="medNotes"]', key: 'reminder.notes' },
   { selector: '#addReminderBtn', key: 'reminder.add_button' },
-  { selector: '#todayScheduleHeading', key: 'reminder.today_schedule' }
+  { selector: '#todayScheduleHeading', key: 'reminder.today_schedule' },
+
+  { selector: '#forgotPasswordForm .auth-title', key: 'forgot.title' },
+  { selector: '#forgotPasswordForm p', key: 'forgot.subtitle' },
+  { selector: '#forgotPasswordForm label[for="resetRole"]', key: 'forgot.role' },
+  { selector: '#forgotPasswordForm label[for="resetUsername"]', key: 'forgot.username' },
+  { selector: '#forgotPasswordForm button[type="submit"]', key: 'forgot.send_otp' },
+  { selector: '#forgotPasswordForm .btn-sec', key: 'forgot.back_to_login' },
+  { selector: '#resetOtpForm .auth-title', key: 'forgot.otp_title' },
+  { selector: '#resetOtpForm p', key: 'forgot.otp_subtitle' },
+  { selector: '#resetOtpForm label[for="resetOtp"]', key: 'forgot.otp_placeholder' },
+  { selector: '#resetOtpForm button[type="submit"]', key: 'forgot.verify_otp' },
+  { selector: '#resetOtpForm .btn-sec', key: 'forgot.back' },
+  { selector: '#resetPasswordNewForm .auth-title', key: 'forgot.new_password_title' },
+  { selector: '#resetPasswordNewForm p', key: 'forgot.new_password_subtitle' },
+  { selector: '#resetPasswordNewForm label[for="newPassword"]', key: 'forgot.new_password' },
+  { selector: '#resetPasswordNewForm label[for="confirmNewPassword"]', key: 'forgot.confirm_new_password' },
+  { selector: '#resetPasswordNewForm button[type="submit"]', key: 'forgot.update_password' },
+  { selector: '#resetPasswordNewForm .btn-sec', key: 'forgot.cancel' }
 ];
 
 const uiOptionBindings = [
@@ -183,6 +205,8 @@ const uiOptionBindings = [
   { selector: '#loginRole option[value="doctor"]', key: 'roles.doctor' },
   { selector: '#registerRole option[value="patient"]', key: 'roles.patient' },
   { selector: '#registerRole option[value="doctor"]', key: 'roles.doctor' },
+  { selector: '#resetRole option[value="patient"]', key: 'roles.patient' },
+  { selector: '#resetRole option[value="doctor"]', key: 'roles.doctor' },
 
   { selector: '#suggestCondition option[value="auto"]', key: 'patient_dashboard.best_doctor.use_latest' },
   { selector: '#suggestCondition option[value="chest_pain"]', key: 'condition.chest_pain' },
@@ -230,10 +254,16 @@ const uiOptionBindings = [
   { selector: '#bookingDisease option[value="skin_rash"]', key: 'condition.skin_rash' },
   { selector: '#bookingDisease option[value="vomiting"]', key: 'condition.vomiting' },
 
+  { selector: '#medTime option[value="Early Morning 6:00 AM"]', key: 'reminder.time.early_morning' },
   { selector: '#medTime option[value="Morning 8:00 AM"]', key: 'reminder.time.morning' },
+  { selector: '#medTime option[value="Mid-Morning 10:00 AM"]', key: 'reminder.time.mid_morning' },
+  { selector: '#medTime option[value="Lunch Time 12:00 PM"]', key: 'reminder.time.lunch' },
   { selector: '#medTime option[value="Afternoon 1:00 PM"]', key: 'reminder.time.afternoon' },
+  { selector: '#medTime option[value="Late Afternoon 4:00 PM"]', key: 'reminder.time.late_afternoon' },
   { selector: '#medTime option[value="Evening 6:00 PM"]', key: 'reminder.time.evening' },
+  { selector: '#medTime option[value="Dinner Time 8:00 PM"]', key: 'reminder.time.dinner' },
   { selector: '#medTime option[value="Night 10:00 PM"]', key: 'reminder.time.night' },
+  { selector: '#medTime option[value="Bedtime 11:00 PM"]', key: 'reminder.time.bedtime' },
 
   { selector: '#medFreq option[value="Daily"]', key: 'reminder.freq.daily' },
   { selector: '#medFreq option[value="Twice a day"]', key: 'reminder.freq.twice' },
@@ -496,7 +526,8 @@ function defaultAppData() {
     doctorReviews: [],
     emergencyRequests: [],
     remindersByUser: {},
-    patientProfiles: {}
+    patientProfiles: {},
+    patientDetails: []
   };
 }
 
@@ -523,7 +554,8 @@ function loadAppData() {
       patientProfiles:
         parsed && typeof parsed.patientProfiles === 'object' && parsed.patientProfiles !== null
           ? parsed.patientProfiles
-          : {}
+          : {},
+      patientDetails: Array.isArray(parsed && parsed.patientDetails) ? parsed.patientDetails : []
     };
   } catch (error) {
     return fallback;
@@ -534,6 +566,13 @@ function saveAppData() {
   try {
     appData.queue = [...patientQueue];
     localStorage.setItem(DATA_STORAGE_KEY, JSON.stringify(appData));
+
+    // Also sync to Firestore (fire-and-forget)
+    if (typeof fbSaveAppData === 'function') {
+      fbSaveAppData(appData).catch(function(err) {
+        console.warn('Firestore sync failed:', err);
+      });
+    }
   } catch (error) {
     // Ignore persistence errors gracefully.
   }
@@ -710,15 +749,15 @@ function refreshDashboardNavbarLanguage() {
 
 function applyLanguageToStaticUI() {
   uiBindings.forEach((binding) => {
-    setTextIfPresent(binding.selector, translatedOrNull(binding.key));
+    setTextIfPresent(binding.selector, t(binding.key));
   });
 
   uiOptionBindings.forEach((binding) => {
-    setTextIfPresent(binding.selector, translatedOrNull(binding.key));
+    setTextIfPresent(binding.selector, t(binding.key));
   });
 
   uiHtmlBindings.forEach((binding) => {
-    setHtmlIfPresent(binding.selector, translatedOrNull(binding.key));
+    setHtmlIfPresent(binding.selector, t(binding.key));
   });
 
   setNavButtonText('home', 'nav.home');
@@ -830,6 +869,11 @@ async function setLanguage(code, notify = true) {
   renderPatientDashboard();
   refreshDashboardNavbarLanguage();
 
+  // Update AI Doctor section labels
+  if (typeof updateAILabels === 'function') {
+    updateAILabels();
+  }
+
   if (notify) {
     showToast(t('common.language_changed', { language: getLanguageLabel(safeCode) }), 'info');
   }
@@ -940,10 +984,16 @@ function localizeQueueWaitValue(wait, severity) {
 
 function localizeReminderTimeLabel(value) {
   const map = {
+    'Early Morning 6:00 AM': 'reminder.time.early_morning_plain',
     'Morning 8:00 AM': 'reminder.time.morning_plain',
+    'Mid-Morning 10:00 AM': 'reminder.time.mid_morning_plain',
+    'Lunch Time 12:00 PM': 'reminder.time.lunch_plain',
     'Afternoon 1:00 PM': 'reminder.time.afternoon_plain',
+    'Late Afternoon 4:00 PM': 'reminder.time.late_afternoon_plain',
     'Evening 6:00 PM': 'reminder.time.evening_plain',
-    'Night 10:00 PM': 'reminder.time.night_plain'
+    'Dinner Time 8:00 PM': 'reminder.time.dinner_plain',
+    'Night 10:00 PM': 'reminder.time.night_plain',
+    'Bedtime 11:00 PM': 'reminder.time.bedtime_plain'
   };
   return map[value] ? t(map[value]) : value;
 }
@@ -1181,37 +1231,419 @@ function setRegisterError(message) {
   errorEl.textContent = message || '';
 }
 
+function setFieldError(fieldId, message) {
+  const field = byId(fieldId);
+  const errorEl = byId(fieldId + 'Error');
+  if (field) {
+    field.classList.toggle('error', !!message);
+  }
+  if (errorEl) {
+    errorEl.textContent = message || '';
+    errorEl.style.display = message ? 'block' : 'none';
+  }
+}
+
+function validateField(fieldId) {
+  const field = byId(fieldId);
+  if (!field) return;
+
+  const value = field.value.trim();
+  let error = '';
+
+  switch(fieldId) {
+    case 'registerUsername':
+      if (!value) {
+        error = 'Username is required';
+      } else if (value.length < 3) {
+        error = 'Username must be at least 3 characters';
+      } else if (!/^[a-zA-Z0-9._-]+$/.test(value)) {
+        error = 'Username can only contain letters, numbers, dots, underscores, and hyphens';
+      }
+      break;
+    case 'registerPassword':
+      if (!value) {
+        error = 'Password is required';
+      } else if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(value)) {
+        error = 'Password must be 8+ characters with uppercase, lowercase, number, and special character';
+      }
+      break;
+    case 'registerConfirmPassword':
+      const password = byId('registerPassword').value;
+      if (!value) {
+        error = 'Please confirm your password';
+      } else if (value !== password) {
+        error = 'Passwords do not match';
+      }
+      break;
+    case 'registerPhone':
+      if (!value) {
+        error = 'Phone number is required';
+      } else if (!/^[6-9]\d{9}$/.test(value.replace(/\D/g, ''))) {
+        error = 'Enter a valid 10-digit Indian mobile number starting with 6-9';
+      } else if (!phoneVerified) {
+        error = 'Please verify your phone number with OTP';
+      }
+      break;
+    case 'registerEmail':
+      if (!value) {
+        error = 'Email is required';
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+        error = 'Enter a valid email address';
+      }
+      break;
+    case 'registerState':
+      if (!value) {
+        error = 'State is required';
+      }
+      break;
+    case 'registerAddress':
+      if (!value) {
+        error = 'Address is required';
+      }
+      break;
+    case 'registerQualification':
+      if (byId('registerRole').value === 'doctor' && value === '') {
+        error = 'Please select your qualification';
+      }
+      break;
+    case 'registerExperience':
+      const exp = parseInt(value);
+      if (byId('registerRole').value === 'doctor' && (isNaN(exp) || exp < 0)) {
+        error = 'Please enter valid years of experience';
+      }
+      break;
+    case 'registerSpecialties':
+      const checked = byId('registerSpecialties').querySelectorAll('input:checked');
+      if (byId('registerRole').value === 'doctor' && checked.length === 0) {
+        error = 'Please select at least one specialty';
+      }
+      break;
+    case 'registerDoctorLocation':
+      if (byId('registerRole').value === 'doctor' && !value) {
+        error = 'Practice location is required';
+      }
+      break;
+  }
+
+  setFieldError(fieldId, error);
+  return !error;
+}
+
 function syncRegisterRoleTitle() {
   const titleEl = byId('registerFormTitle');
   const roleEl = byId('registerRole');
+  const doctorFields = byId('doctorFields');
   if (!titleEl || !roleEl) {
     return;
   }
 
   titleEl.textContent = roleEl.value === 'doctor' ? t('register.doctor_title') : t('register.patient_title');
+
+  if (doctorFields) {
+    if (roleEl.value === 'doctor') {
+      doctorFields.classList.remove('hidden');
+      // Validate doctor fields
+      validateField('registerQualification');
+      validateField('registerDoctorLocation');
+    } else {
+      doctorFields.classList.add('hidden');
+      // Clear doctor field errors
+      setFieldError('registerQualification', '');
+      setFieldError('registerDoctorLocation', '');
+    }
+  }
 }
 
 function openRegisterForm(role = 'patient') {
-  const registerForm = byId('registerForm');
+  switchTab('register');
   const roleEl = byId('registerRole');
-  if (!registerForm || !roleEl) {
-    return;
+  if (roleEl) {
+    roleEl.value = role === 'doctor' ? 'doctor' : 'patient';
+    syncRegisterRoleTitle();
   }
-
-  roleEl.value = role === 'doctor' ? 'doctor' : 'patient';
-  syncRegisterRoleTitle();
-  registerForm.classList.remove('hidden');
-  setRegisterError('');
 }
 
-function closeRegisterForm() {
-  const registerForm = byId('registerForm');
-  if (!registerForm) {
+function switchTab(tab) {
+  const loginTab = byId('loginTab');
+  const registerTab = byId('registerTab');
+  const loginContainer = byId('loginFormContainer');
+  const registerContainer = byId('registerFormContainer');
+
+  if (tab === 'login') {
+    loginTab.classList.add('active');
+    registerTab.classList.remove('active');
+    loginContainer.classList.remove('hidden');
+    registerContainer.classList.add('hidden');
+  } else if (tab === 'register') {
+    registerTab.classList.add('active');
+    loginTab.classList.remove('active');
+    registerContainer.classList.remove('hidden');
+    loginContainer.classList.add('hidden');
+    resetOtpState(); // Reset OTP state when opening register form
+  }
+}
+
+function showForgotPassword() {
+  switchTab('login');
+  byId('loginFormContainer').classList.add('hidden');
+  byId('forgotPasswordForm').classList.remove('hidden');
+  byId('resetOtpForm').classList.add('hidden');
+  byId('resetPasswordNewForm').classList.add('hidden');
+  // Reset state
+  resetUserRole = null;
+  resetUsername = null;
+  resetPhone = null;
+  setResetError('');
+  setResetOtpError('');
+  setNewPasswordError('');
+}
+
+function hideForgotPassword() {
+  byId('forgotPasswordForm').classList.add('hidden');
+  byId('resetOtpForm').classList.add('hidden');
+  byId('resetPasswordNewForm').classList.add('hidden');
+  byId('loginFormContainer').classList.remove('hidden');
+  // Reset state
+  resetUserRole = null;
+  resetUsername = null;
+  resetPhone = null;
+  setResetError('');
+  setResetOtpError('');
+  setNewPasswordError('');
+}
+
+function sendPasswordResetOtp(event) {
+  event.preventDefault();
+  const role = byId('resetRole').value;
+  const username = byId('resetUsername').value.trim();
+
+  if (!role || !username) {
+    setResetError(t('auth.error.login_fields_required'));
     return;
   }
 
-  registerForm.classList.add('hidden');
-  setRegisterError('');
+  // Find user
+  const user = findUser(role, username);
+  if (!user) {
+    setResetError(t('forgot.error.user_not_found'));
+    return;
+  }
+
+  if (!user.phone) {
+    setResetError(t('forgot.error.no_phone'));
+    return;
+  }
+
+  // Store reset info
+  resetUserRole = role;
+  resetUsername = username;
+  resetPhone = user.phone;
+
+  // Mock OTP send
+  showToast(t('forgot.success_otp_sent'), 'info');
+
+  // Show OTP form
+  byId('forgotPasswordForm').classList.add('hidden');
+  byId('resetOtpForm').classList.remove('hidden');
+  setResetError('');
+}
+
+function verifyResetOtp(event) {
+  event.preventDefault();
+  const otp = byId('resetOtp').value.trim();
+
+  if (otp === '123456') { // Demo OTP
+    showToast(t('forgot.success_otp_verified'), 'success');
+    // Show new password form
+    byId('resetOtpForm').classList.add('hidden');
+    byId('resetPasswordNewForm').classList.remove('hidden');
+    setResetOtpError('');
+  } else {
+    setResetOtpError(t('forgot.otp_invalid'));
+  }
+}
+
+function setNewPassword(event) {
+  event.preventDefault();
+  const newPassword = byId('newPassword').value;
+  const confirmPassword = byId('confirmNewPassword').value;
+
+  // Validate passwords
+  const passwordValid = validateNewPassword();
+  const confirmValid = validateConfirmNewPassword();
+
+  if (!passwordValid || !confirmValid) {
+    return;
+  }
+
+  // Update password
+  const user = findUser(resetUserRole, resetUsername);
+  if (user) {
+    user.password = newPassword;
+    saveAuthUsers();
+
+    // Also update in Firebase if available
+    if (typeof fbUpdatePassword === 'function') {
+      fbUpdatePassword(resetUsername, resetUserRole, newPassword).catch(err => {
+        console.warn('Firebase password update failed:', err);
+      });
+    }
+
+    showToast(t('forgot.success_password_updated'), 'success');
+    setTimeout(() => {
+      hideForgotPassword();
+      switchTab('login');
+    }, 2000);
+  } else {
+    setNewPasswordError(t('forgot.error_user_not_found'));
+  }
+}
+
+function backToResetUsername() {
+  byId('resetOtpForm').classList.add('hidden');
+  byId('forgotPasswordForm').classList.remove('hidden');
+  setResetOtpError('');
+}
+
+function setResetError(message) {
+  const el = byId('resetError');
+  if (!el) return;
+  el.textContent = message || '';
+}
+
+function setResetOtpError(message) {
+  const el = byId('resetOtpError');
+  if (!el) return;
+  el.textContent = message || '';
+}
+
+function setNewPasswordError(message) {
+  const el = byId('newPasswordError');
+  if (!el) return;
+  el.textContent = message || '';
+}
+
+function validatePasswordStrength(password) {
+  return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(password);
+}
+
+function validateNewPassword() {
+  const password = byId('newPassword').value;
+  let error = '';
+
+  if (!password) {
+    error = 'Password is required';
+  } else if (!validatePasswordStrength(password)) {
+    error = 'Password must be 8+ characters with uppercase, lowercase, number, and special character';
+  }
+
+  setFieldError('newPassword', error);
+  return !error;
+}
+
+function validateConfirmNewPassword() {
+  const password = byId('newPassword').value;
+  const confirm = byId('confirmNewPassword').value;
+  let error = '';
+
+  if (!confirm) {
+    error = 'Please confirm your password';
+  } else if (confirm !== password) {
+    error = 'Passwords do not match';
+  }
+
+  setFieldError('confirmNewPassword', error);
+  return !error;
+}
+
+let resetUserRole = null;
+let resetUsername = null;
+let resetPhone = null;
+
+function resetOtpState() {
+  phoneVerified = false;
+  const otpGroup = byId('otpGroup');
+  const sendOtpBtn = byId('sendOtpBtn');
+  if (otpGroup) otpGroup.style.display = 'none';
+  if (sendOtpBtn) {
+    sendOtpBtn.textContent = 'Send OTP';
+    sendOtpBtn.disabled = false;
+  }
+  setFieldError('registerOtp', '');
+}
+
+function sendOtp() {
+  const phone = byId('registerPhone').value.trim();
+  if (!/^[6-9]\d{9}$/.test(phone.replace(/\D/g, ''))) {
+    setFieldError('registerPhone', 'Enter a valid 10-digit Indian mobile number');
+    return;
+  }
+  // Mock OTP send
+  showToast('OTP sent to your phone (Demo: use 123456)', 'info');
+  byId('otpGroup').style.display = 'block';
+  byId('sendOtpBtn').disabled = true;
+}
+
+function verifyOtp() {
+  const otp = byId('registerOtp').value.trim();
+  if (otp === '123456') { // Demo OTP
+    phoneVerified = true;
+    showToast('Phone verified successfully!', 'success');
+    byId('otpGroup').style.display = 'none';
+    byId('sendOtpBtn').textContent = 'Verified';
+    byId('sendOtpBtn').disabled = true;
+    setFieldError('registerPhone', '');
+    validateField('registerPhone'); // Re-validate to clear any error
+  } else {
+    setFieldError('registerOtp', 'Invalid OTP. Use 123456 for demo.');
+  }
+}
+
+function getLiveLocation() {
+  const addressEl = byId('registerAddress');
+  const btn = byId('getLocationBtn');
+  if (!addressEl || !btn) return;
+
+  if (!navigator.geolocation) {
+    setRegisterError('Geolocation is not supported by this browser.');
+    return;
+  }
+
+  btn.textContent = '⏳ Getting Location...';
+  btn.disabled = true;
+
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      const lat = position.coords.latitude;
+      const lon = position.coords.longitude;
+      // For simplicity, just set the address to lat,lon. In a real app, reverse geocode.
+      addressEl.value = `Lat: ${lat.toFixed(6)}, Lon: ${lon.toFixed(6)}`;
+      btn.textContent = '📍 Get Live Location';
+      btn.disabled = false;
+    },
+    (error) => {
+      let errorMsg = 'Unable to retrieve location.';
+      switch(error.code) {
+        case error.PERMISSION_DENIED:
+          errorMsg = 'Location access denied by user.';
+          break;
+        case error.POSITION_UNAVAILABLE:
+          errorMsg = 'Location information is unavailable.';
+          break;
+        case error.TIMEOUT:
+          errorMsg = 'Location request timed out.';
+          break;
+      }
+      setRegisterError(errorMsg);
+      btn.textContent = '📍 Get Live Location';
+      btn.disabled = false;
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 300000
+    }
+  );
 }
 
 function clearSymptomSelection() {
@@ -1266,79 +1698,133 @@ function applyPortalVisibility() {
   });
 }
 
-function registerUser(event) {
+async function registerUser(event) {
   if (event) {
     event.preventDefault();
   }
 
+  // Clear previous errors
+  setRegisterError('');
+
+  // Validate all fields
+  const fieldsToValidate = [
+    'registerUsername', 'registerPassword', 'registerConfirmPassword',
+    'registerPhone', 'registerEmail', 'registerState', 'registerAddress'
+  ];
+  const role = byId('registerRole').value;
+  if (role === 'doctor') {
+    fieldsToValidate.push('registerQualification', 'registerExperience', 'registerSpecialties', 'registerDoctorLocation');
+  }
+
+  let hasErrors = false;
+  fieldsToValidate.forEach(fieldId => {
+    if (!validateField(fieldId)) {
+      hasErrors = true;
+    }
+  });
+
+  if (hasErrors) {
+    setRegisterError('Please correct the errors above before submitting.');
+    return;
+  }
+
+  // Check phone verification
+  if (!phoneVerified) {
+    setRegisterError('Please verify your phone number with OTP before registering.');
+    return;
+  }
+
+  // Get values
   const roleEl = byId('registerRole');
   const usernameEl = byId('registerUsername');
   const passwordEl = byId('registerPassword');
-  const confirmEl = byId('registerConfirmPassword');
   const phoneEl = byId('registerPhone');
   const emailEl = byId('registerEmail');
   const stateEl = byId('registerState');
   const addressEl = byId('registerAddress');
+  const qualificationEl = byId('registerQualification');
+  const doctorLocationEl = byId('registerDoctorLocation');
+  const experienceEl = byId('registerExperience');
+  const specialtiesEl = byId('registerSpecialties');
 
-  const role = roleEl ? roleEl.value : '';
   const username = usernameEl ? usernameEl.value.trim() : '';
   const password = passwordEl ? passwordEl.value : '';
-  const confirmPassword = confirmEl ? confirmEl.value : '';
   const phone = phoneEl ? normalizePhone(phoneEl.value) : '';
   const email = emailEl ? emailEl.value.trim().toLowerCase() : '';
   const state = stateEl ? stateEl.value.trim() : '';
   const address = addressEl ? addressEl.value.trim() : '';
-
-  if (!role || !username || !password || !confirmPassword || !phone || !email || !state || !address) {
-    setRegisterError(t('auth.error.complete_registration_fields'));
-    return;
-  }
-
-  if (username.length < 3) {
-    setRegisterError(t('auth.error.username_min'));
-    return;
-  }
-
-  if (!/^[a-zA-Z0-9._-]+$/.test(username)) {
-    setRegisterError(t('auth.error.username_chars'));
-    return;
-  }
-
-  if (password.length < 6) {
-    setRegisterError(t('auth.error.password_min'));
-    return;
-  }
-
-  if (password !== confirmPassword) {
-    setRegisterError(t('auth.error.password_mismatch'));
-    return;
-  }
-
-  if (phone.replace(/\D/g, '').length < 10) {
-    setRegisterError(t('auth.error.phone_invalid'));
-    return;
-  }
-
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    setRegisterError(t('auth.error.email_invalid'));
-    return;
-  }
-
-  if (findUser(role, username)) {
-    setRegisterError(t('auth.error.username_exists'));
-    return;
-  }
+  const qualification = qualificationEl ? qualificationEl.value : '';
+  const doctorLocation = doctorLocationEl ? doctorLocationEl.value.trim() : '';
+  const experience = experienceEl ? parseInt(experienceEl.value) || 0 : 0;
+  const specialties = specialtiesEl ? Array.from(specialtiesEl.querySelectorAll('input:checked')).map(cb => cb.value) : [];
 
   const safeRole = role === 'doctor' ? 'doctor' : 'patient';
-  authUsers[safeRole].push({
-    username: username.toLowerCase(),
-    password,
-    phone,
-    email,
-    state,
-    address
-  });
-  saveAuthUsers();
+
+  // Show loading state
+  const registerBtn = document.querySelector('#registerForm .register-btn');
+  const originalBtnText = registerBtn ? registerBtn.textContent : '';
+  if (registerBtn) {
+    registerBtn.textContent = '⏳ Creating Account...';
+    registerBtn.disabled = true;
+  }
+
+  // Register with Firebase Auth
+  if (typeof fbSignUp === 'function') {
+    const userData = {
+      email: email,
+      phone: phone,
+      state: state,
+      address: address,
+      displayName: username
+    };
+    if (role === 'doctor') {
+      userData.qualification = qualification;
+      userData.experience = experience;
+      userData.specialties = specialties;
+      userData.doctorLocation = doctorLocation;
+    }
+    const result = await fbSignUp(username.toLowerCase(), safeRole, password, userData);
+
+    if (!result.success) {
+      if (registerBtn) {
+        registerBtn.textContent = originalBtnText;
+        registerBtn.disabled = false;
+      }
+      if (result.error === 'auth/email-already-in-use') {
+        setRegisterError(t('auth.error.username_exists'));
+      } else if (result.error === 'auth/weak-password') {
+        setRegisterError(t('auth.error.password_min'));
+      } else {
+        setRegisterError(result.message || 'Registration failed. Please try again.');
+      }
+      return;
+    }
+  }
+
+  // Also keep in local authUsers for backward compatibility
+  if (!findUser(safeRole, username)) {
+    const userObj = {
+      username: username.toLowerCase(),
+      password,
+      phone,
+      email,
+      state,
+      address
+    };
+    if (role === 'doctor') {
+      userObj.qualification = qualification;
+      userObj.experience = experience;
+      userObj.specialties = specialties;
+      userObj.doctorLocation = doctorLocation;
+    }
+    authUsers[safeRole].push(userObj);
+    saveAuthUsers();
+  }
+
+  if (registerBtn) {
+    registerBtn.textContent = originalBtnText;
+    registerBtn.disabled = false;
+  }
 
   if (roleEl) {
     roleEl.value = safeRole;
@@ -1364,6 +1850,12 @@ function registerUser(event) {
   if (addressEl) {
     addressEl.value = '';
   }
+  if (qualificationEl) {
+    qualificationEl.value = '';
+  }
+  if (doctorLocationEl) {
+    doctorLocationEl.value = '';
+  }
 
   const loginRoleEl = byId('loginRole');
   const loginUsernameEl = byId('loginUsername');
@@ -1377,11 +1869,12 @@ function registerUser(event) {
 
   closeRegisterForm();
   setRegisterError('');
+  switchTab('login');
   setLoginError(t('auth.success.registration_login_prompt'));
   showToast(t('auth.success.registration'), 'success');
 }
 
-function loginUser(event) {
+async function loginUser(event) {
   if (event) {
     event.preventDefault();
   }
@@ -1399,29 +1892,116 @@ function loginUser(event) {
     return;
   }
 
-  authUsers = loadAuthUsers();
-  appData = loadAppData();
+  // Show loading state on login button
+  const loginBtn = document.querySelector('#loginForm .login-btn');
+  const originalBtnText = loginBtn ? loginBtn.textContent : '';
+  if (loginBtn) {
+    loginBtn.textContent = '⏳ Logging in...';
+    loginBtn.disabled = true;
+  }
+
+  let firebaseUid = null;
+  let firebaseProfile = null;
+
+  // Try Firebase Auth
+  if (typeof fbSignIn === 'function') {
+    let result = await fbSignIn(username, role, password);
+
+    // If login fails, check if this is a default credential that needs auto-creation
+    if (!result.success) {
+      const isDefault = defaultCredentials[role] &&
+        defaultCredentials[role].some(
+          function(d) { return d.username === username.toLowerCase() && d.password === password; }
+        );
+
+      if (isDefault) {
+        // Auto-create the default user in Firebase
+        await fbEnsureDefaultUser(username.toLowerCase(), role, password);
+        result = await fbSignIn(username, role, password);
+      }
+
+      if (!result.success) {
+        if (loginBtn) {
+          loginBtn.textContent = originalBtnText;
+          loginBtn.disabled = false;
+        }
+        setLoginError(t('auth.error.invalid_login'));
+        showToast(t('auth.error.invalid_credentials'), 'error');
+        return;
+      }
+    }
+
+    firebaseUid = result.uid;
+
+    // Load user profile from Firestore
+    firebaseProfile = await fbGetUserProfile(firebaseUid);
+
+    // Verify role matches
+    if (firebaseProfile && firebaseProfile.role && firebaseProfile.role !== role) {
+      if (loginBtn) {
+        loginBtn.textContent = originalBtnText;
+        loginBtn.disabled = false;
+      }
+      await fbSignOut();
+      setLoginError(t('auth.error.invalid_login'));
+      showToast(t('auth.error.invalid_credentials'), 'error');
+      return;
+    }
+
+    // Load app data from Firestore
+    const firestoreData = await fbLoadAppData();
+    if (firestoreData) {
+      appData = {
+        queue: Array.isArray(firestoreData.queue) ? firestoreData.queue : [],
+        visits: Array.isArray(firestoreData.visits) ? firestoreData.visits : [],
+        checkedPatients: Array.isArray(firestoreData.checkedPatients) ? firestoreData.checkedPatients : [],
+        bookings: Array.isArray(firestoreData.bookings) ? firestoreData.bookings : [],
+        doctorReviews: Array.isArray(firestoreData.doctorReviews) ? firestoreData.doctorReviews : [],
+        emergencyRequests: Array.isArray(firestoreData.emergencyRequests) ? firestoreData.emergencyRequests : [],
+        remindersByUser: (firestoreData.remindersByUser && typeof firestoreData.remindersByUser === 'object') ? firestoreData.remindersByUser : {},
+        patientProfiles: (firestoreData.patientProfiles && typeof firestoreData.patientProfiles === 'object') ? firestoreData.patientProfiles : {},
+        patientDetails: Array.isArray(firestoreData.patientDetails) ? firestoreData.patientDetails : []
+      };
+    } else {
+      // Fallback to localStorage if Firestore has no data
+      appData = loadAppData();
+    }
+  } else {
+    // Fallback: no Firebase available, use localStorage auth
+    authUsers = loadAuthUsers();
+    appData = loadAppData();
+    const matchedUser = findUser(role, username);
+    const valid = matchedUser && matchedUser.password === password;
+    if (!valid) {
+      if (loginBtn) {
+        loginBtn.textContent = originalBtnText;
+        loginBtn.disabled = false;
+      }
+      setLoginError(t('auth.error.invalid_login'));
+      showToast(t('auth.error.invalid_credentials'), 'error');
+      return;
+    }
+  }
+
   patientQueue = Array.isArray(appData.queue) ? [...appData.queue] : [];
 
-  const matchedUser = findUser(role, username);
-  const valid = matchedUser && matchedUser.password === password;
-
-  if (!valid) {
-    setLoginError(t('auth.error.invalid_login'));
-    showToast(t('auth.error.invalid_credentials'), 'error');
-    return;
+  if (loginBtn) {
+    loginBtn.textContent = originalBtnText;
+    loginBtn.disabled = false;
   }
 
   currentUserRole = role;
-  currentUserName = matchedUser.username;
+  currentUserName = username.trim().toLowerCase();
+  currentUserUid = firebaseUid;
   reminders = currentUserRole === 'patient' ? loadRemindersForUser(currentUserName) : [];
 
   if (currentUserRole === 'patient') {
+    const profileData = firebaseProfile || {};
     setPatientProfile({
-      contactPhone: matchedUser.phone || '',
-      contactEmail: matchedUser.email || '',
-      state: matchedUser.state || '',
-      address: matchedUser.address || ''
+      contactPhone: profileData.phone || '',
+      contactEmail: profileData.realEmail || profileData.email || '',
+      state: profileData.state || '',
+      address: profileData.address || ''
     });
   }
 
@@ -1449,6 +2029,12 @@ function loginUser(event) {
   renderDoctorDashboard();
   renderBookSessionPage();
   renderPatientDashboard();
+
+  // Load and render doctors directory
+  loadRegisteredDoctors().then(function() {
+    renderDoctorsDirectory();
+  });
+
   goPage('home');
   showToast(t('auth.success.login', { portal: portalAccess[role].label }), 'success');
 
@@ -1460,11 +2046,17 @@ function loginUser(event) {
   }
 }
 
-function logoutUser() {
+async function logoutUser() {
   persistRemindersForCurrentUser();
+
+  // Firebase sign out
+  if (typeof fbSignOut === 'function') {
+    await fbSignOut();
+  }
 
   currentUserRole = null;
   currentUserName = '';
+  currentUserUid = null;
   reminders = [];
   clearSymptomSelection();
 
@@ -1518,6 +2110,30 @@ function bindAuthForms() {
     registerRole.dataset.boundChange = '1';
   }
 
+  // Real-time validation for register fields
+  const registerFields = [
+    'registerUsername', 'registerPassword', 'registerConfirmPassword',
+    'registerPhone', 'registerEmail', 'registerState', 'registerAddress',
+    'registerQualification', 'registerDoctorLocation'
+  ];
+
+  registerFields.forEach(fieldId => {
+    const field = byId(fieldId);
+    if (field && !field.dataset.boundValidation) {
+      field.addEventListener('blur', () => validateField(fieldId));
+      field.addEventListener('input', () => {
+        if (byId(fieldId + 'Error').textContent) {
+          validateField(fieldId);
+        }
+        // Reset OTP verification if phone number changes
+        if (fieldId === 'registerPhone') {
+          resetOtpState();
+        }
+      });
+      field.dataset.boundValidation = '1';
+    }
+  });
+
   const reviewSession = byId('patientReviewSession');
   if (reviewSession && !reviewSession.dataset.boundChange) {
     reviewSession.addEventListener('change', syncReviewDoctorWithSession);
@@ -1559,11 +2175,15 @@ function goPage(id) {
     activeTab.classList.add('active');
   }
 
+  if (id === 'home') {
+    renderDoctorsDirectory();
+  }
   if (id === 'queue') {
     renderQueue();
   }
   if (id === 'reminder') {
     renderReminders();
+    updateNotificationButton();
   }
   if (id === 'doctor-dashboard') {
     renderDoctorDashboard();
@@ -1751,7 +2371,8 @@ function analyzeSymptoms() {
 function recordVisit(patientObj) {
   appData.visits.unshift({
     ...patientObj,
-    visitedAt: new Date().toISOString()
+    visitedAt: new Date().toISOString(),
+    doctorUsername: currentUserName
   });
   saveAppData();
 }
@@ -1885,16 +2506,167 @@ function callNextPatient() {
 }
 
 // ================= BOOKINGS / DASHBOARDS =================
+
+// Get all doctors from both directory and registered users
+function getAllDoctors() {
+  const allDoctors = [...doctorsDirectory];
+  
+  // Add registered doctors from authUsers
+  if (authUsers && authUsers.doctor && Array.isArray(authUsers.doctor)) {
+    authUsers.doctor.forEach((registeredDoc) => {
+      // Check if this doctor is already in the directory
+      const existingDoc = allDoctors.find(d => d.name === registeredDoc.username || d.id === registeredDoc.username);
+      if (!existingDoc) {
+        allDoctors.push({
+          id: registeredDoc.username,
+          name: registeredDoc.username.charAt(0).toUpperCase() + registeredDoc.username.slice(1),
+          specialties: registeredDoc.specialties || ['General Medicine'],
+          rating: 4.5, // Default rating for new registrations
+          experience: registeredDoc.experience || 0,
+          hospital: registeredDoc.doctorLocation || 'Private Practice',
+          qualification: registeredDoc.qualification || 'MD',
+          phone: registeredDoc.phone || '',
+          email: registeredDoc.email || '',
+          state: registeredDoc.state || '',
+          address: registeredDoc.address || '',
+          isRegistered: true
+        });
+      }
+    });
+  }
+  
+  return allDoctors;
+}
+
+// Render doctor list with cards
+function renderDoctorList() {
+  const container = byId('doctorListContainer');
+  if (!container) {
+    return;
+  }
+
+  const allDoctors = getAllDoctors();
+  
+  if (allDoctors.length === 0) {
+    container.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:var(--text-muted);padding:40px 20px;">No doctors found.</div>`;
+    return;
+  }
+
+  container.innerHTML = allDoctors
+    .map((doctor) => {
+      const specialty = Array.isArray(doctor.specialties) ? doctor.specialties[0] : 'General Medicine';
+      const rating = doctor.rating || 4.5;
+      const isRegistered = doctor.isRegistered ? ' (Registered)' : '';
+      const experienceText = doctor.experience ? ` · ${doctor.experience} yrs exp` : '';
+      
+      return `
+        <div style="border:1px solid var(--border);border-radius:12px;padding:16px;background:var(--bg-card);cursor:pointer;transition:all 0.3s;" onclick="selectDoctorForBooking('${doctor.id}')">
+          <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:12px;">
+            <div style="font-weight:600;font-size:16px;color:var(--text);">${doctor.name}</div>
+            <div style="background:var(--accent);color:white;padding:4px 8px;border-radius:6px;font-size:12px;font-weight:600;">${rating.toFixed(1)}★</div>
+          </div>
+          <div style="font-size:13px;color:var(--text-muted);margin-bottom:8px;">
+            ${specialty}${experienceText}${isRegistered}
+          </div>
+          <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">
+            📍 ${doctor.hospital || doctor.doctorLocation || 'Location not specified'}
+          </div>
+          <button class="btn-primary" style="width:100%;padding:8px;font-size:13px;border:none;cursor:pointer;background:var(--accent);color:white;border-radius:6px;" onclick="selectDoctorForBooking('${doctor.id}'); event.stopPropagation();">
+            Select & Book
+          </button>
+        </div>
+      `;
+    })
+    .join('');
+}
+
+// Filter doctor list based on search and specialty
+function filterDoctorList() {
+  const searchInput = byId('doctorSearchInput');
+  const specialtyFilter = byId('doctorSpecialtyFilter');
+  const container = byId('doctorListContainer');
+  
+  if (!container || !searchInput) {
+    return;
+  }
+
+  const searchTerm = searchInput.value.toLowerCase().trim();
+  const selectedSpecialty = specialtyFilter ? specialtyFilter.value : '';
+  
+  const allDoctors = getAllDoctors();
+  
+  const filteredDoctors = allDoctors.filter((doctor) => {
+    const matchesSearch = !searchTerm || 
+      doctor.name.toLowerCase().includes(searchTerm) ||
+      (doctor.specialties && doctor.specialties.some(s => s.toLowerCase().includes(searchTerm))) ||
+      (doctor.hospital && doctor.hospital.toLowerCase().includes(searchTerm)) ||
+      (doctor.state && doctor.state.toLowerCase().includes(searchTerm));
+    
+    const matchesSpecialty = !selectedSpecialty || 
+      (doctor.specialties && doctor.specialties.includes(selectedSpecialty));
+    
+    return matchesSearch && matchesSpecialty;
+  });
+  
+  if (filteredDoctors.length === 0) {
+    container.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:var(--text-muted);padding:40px 20px;">No doctors match your search. Try different keywords.</div>`;
+    return;
+  }
+
+  container.innerHTML = filteredDoctors
+    .map((doctor) => {
+      const specialty = Array.isArray(doctor.specialties) ? doctor.specialties[0] : 'General Medicine';
+      const rating = doctor.rating || 4.5;
+      const isRegistered = doctor.isRegistered ? ' (Registered)' : '';
+      const experienceText = doctor.experience ? ` · ${doctor.experience} yrs exp` : '';
+      
+      return `
+        <div style="border:1px solid var(--border);border-radius:12px;padding:16px;background:var(--bg-card);cursor:pointer;transition:all 0.3s;" onclick="selectDoctorForBooking('${doctor.id}')">
+          <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:12px;">
+            <div style="font-weight:600;font-size:16px;color:var(--text);">${doctor.name}</div>
+            <div style="background:var(--accent);color:white;padding:4px 8px;border-radius:6px;font-size:12px;font-weight:600;">${rating.toFixed(1)}★</div>
+          </div>
+          <div style="font-size:13px;color:var(--text-muted);margin-bottom:8px;">
+            ${specialty}${experienceText}${isRegistered}
+          </div>
+          <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">
+            📍 ${doctor.hospital || doctor.doctorLocation || 'Location not specified'}
+          </div>
+          <button class="btn-primary" style="width:100%;padding:8px;font-size:13px;border:none;cursor:pointer;background:var(--accent);color:white;border-radius:6px;" onclick="selectDoctorForBooking('${doctor.id}'); event.stopPropagation();">
+            Select & Book
+          </button>
+        </div>
+      `;
+    })
+    .join('');
+}
+
+// Select doctor and populate form
+function selectDoctorForBooking(doctorId) {
+  const bookingDoctorSelect = byId('bookingDoctor');
+  if (bookingDoctorSelect) {
+    bookingDoctorSelect.value = doctorId;
+  }
+  
+  // Scroll to booking form
+  const bookingForm = byId('bookingForm');
+  if (bookingForm) {
+    bookingForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
 function populateDoctorOptions() {
   const bookingDoctor = byId('bookingDoctor');
   if (!bookingDoctor) {
     return;
   }
 
-  bookingDoctor.innerHTML = doctorsDirectory
+  const allDoctors = getAllDoctors();
+  
+  bookingDoctor.innerHTML = allDoctors
     .map((doctor) => {
-      const specialty = getSpecialtyLabel(doctor.specialties[0] || 'General Medicine');
-      return `<option value="${doctor.id}">${doctor.name} — ${specialty} (${doctor.rating.toFixed(1)}★)</option>`;
+      const specialty = Array.isArray(doctor.specialties) ? doctor.specialties[0] : 'General Medicine';
+      return `<option value="${doctor.id}">${doctor.name} — ${specialty} (${(doctor.rating || 4.5).toFixed(1)}★)</option>`;
     })
     .join('');
 }
@@ -1995,6 +2767,11 @@ function updateBookingStatus(bookingId, status) {
   booking.status = status;
   booking.updatedAt = new Date().toISOString();
   saveAppData();
+
+  // Auto-add to queue when approved
+  if (status === 'Approved') {
+    autoAddApprovedBookingsToQueue(bookingId);
+  }
 
   renderDoctorDashboard();
   renderBookSessionPage();
@@ -2118,6 +2895,7 @@ function renderDoctorBookingList() {
 
 function renderBookSessionPage() {
   populateDoctorOptions();
+  renderDoctorList();
 
   const dateEl = byId('bookingDate');
   if (dateEl) {
@@ -2389,11 +3167,27 @@ function renderDoctorStats() {
   const pendingEl = byId('doc-stat-pending');
   const ratingEl = byId('doc-stat-rating');
 
-  const visited = appData.visits.length;
-  const checked = appData.checkedPatients.length;
-  const pendingSessions = appData.bookings.filter((b) => b.status === 'Pending' || b.status === 'Approved').length;
-  const reviews = appData.doctorReviews;
-  const avgRating = reviews.length ? reviews.reduce((sum, r) => sum + Number(r.rating || 0), 0) / reviews.length : 0;
+  let visited = 0;
+  let checked = 0;
+  let pendingSessions = 0;
+  let avgRating = 0;
+
+  if (currentUserRole === 'doctor') {
+    // For registered doctors, show their specific data
+    // Filter visits, checkedPatients, bookings by doctorUsername or doctorName matching currentUserName
+    visited = appData.visits.filter(v => v.doctorUsername === currentUserName || v.doctorName === currentUserName).length;
+    checked = appData.checkedPatients.filter(c => c.doctorUsername === currentUserName || c.doctorName === currentUserName).length;
+    pendingSessions = appData.bookings.filter(b => (b.doctorUsername === currentUserName || b.doctorName === currentUserName) && (b.status === 'Pending' || b.status === 'Approved')).length;
+    const reviews = appData.doctorReviews.filter(r => r.doctorUsername === currentUserName || r.doctorName === currentUserName);
+    avgRating = reviews.length ? reviews.reduce((sum, r) => sum + Number(r.rating || 0), 0) / reviews.length : 0;
+  } else {
+    // Fallback to global stats (for hardcoded doctors if any)
+    visited = appData.visits.length;
+    checked = appData.checkedPatients.length;
+    pendingSessions = appData.bookings.filter((b) => b.status === 'Pending' || b.status === 'Approved').length;
+    const reviews = appData.doctorReviews;
+    avgRating = reviews.length ? reviews.reduce((sum, r) => sum + Number(r.rating || 0), 0) / reviews.length : 0;
+  }
 
   if (visitedEl) visitedEl.textContent = visited;
   if (checkedEl) checkedEl.textContent = checked;
@@ -2401,9 +3195,275 @@ function renderDoctorStats() {
   if (ratingEl) ratingEl.textContent = avgRating.toFixed(1);
 }
 
+// ================= DOCTORS DIRECTORY =================
+let registeredDoctorsCache = [];
+
+async function loadRegisteredDoctors() {
+  if (typeof fbLoadRegisteredDoctors === 'function') {
+    try {
+      registeredDoctorsCache = await fbLoadRegisteredDoctors();
+    } catch (err) {
+      console.warn('Failed to load registered doctors:', err);
+      registeredDoctorsCache = [];
+    }
+  }
+}
+
+function renderDoctorsDirectory() {
+  const grid = byId('doctorsDirectoryGrid');
+  if (!grid) return;
+
+  let html = '';
+
+  // Local doctors (from hardcoded directory)
+  doctorsDirectory.forEach(function(doctor) {
+    var specialties = doctor.specialties.map(function(s) {
+      return typeof getSpecialtyLabel === 'function' ? getSpecialtyLabel(s) : s;
+    }).join(' · ');
+
+    html += '<div class="doctor-card">' +
+      '<div class="doctor-card-avatar">👨‍⚕️</div>' +
+      '<div class="doctor-card-name">' + doctor.name + '</div>' +
+      '<div class="doctor-card-spec">' + specialties + '</div>' +
+      '<div class="doctor-card-meta">' +
+        doctor.rating + '★ · ' + doctor.experience + ' years experience<br>' +
+        '🏥 ' + localizeHospitalNameByValue(doctor.hospital) +
+      '</div>' +
+      '<span class="doctor-card-badge badge-local">Local Doctor</span>' +
+    '</div>';
+  });
+
+  // Registered doctors (from Firebase)
+  registeredDoctorsCache.forEach(function(doc) {
+    // Skip default users
+    if (doc.isDefault) return;
+
+    var displayName = doc.displayName || doc.username || 'Doctor';
+    var location = [doc.address, doc.state].filter(Boolean).join(', ') || 'MedReach Platform';
+
+    html += '<div class="doctor-card">' +
+      '<div class="doctor-card-avatar">🩺</div>' +
+      '<div class="doctor-card-name">Dr. ' + displayName.charAt(0).toUpperCase() + displayName.slice(1) + '</div>' +
+      '<div class="doctor-card-spec">General Practitioner</div>' +
+      '<div class="doctor-card-meta">' +
+        (doc.phone ? '📞 ' + doc.phone + '<br>' : '') +
+        (doc.email ? '✉️ ' + doc.email + '<br>' : '') +
+        '📍 ' + location +
+      '</div>' +
+      '<span class="doctor-card-badge badge-registered">Registered Doctor</span>' +
+    '</div>';
+  });
+
+  if (!html) {
+    html = '<div style="color:var(--text-muted);padding:20px;text-align:center;">No doctors available yet.</div>';
+  }
+
+  grid.innerHTML = html;
+}
+
+// ================= PATIENT DETAILS (Doctor adds) =================
+function populateDetailsBookingSelect() {
+  var select = byId('detailsBookingSelect');
+  if (!select) return;
+
+  var bookings = appData.bookings.filter(function(b) {
+    return b.status === 'Approved' || b.status === 'Pending' || b.status === 'Completed';
+  }).sort(function(a, b) {
+    return a.createdAt < b.createdAt ? 1 : -1;
+  });
+
+  if (bookings.length === 0) {
+    select.innerHTML = '<option value="">No patient bookings available</option>';
+    return;
+  }
+
+  select.innerHTML = bookings.map(function(b) {
+    var condLabel = getConditionLabel(b.disease);
+    var dateLabel = formatSessionDate(b.date, b.time);
+    return '<option value="' + b.id + '">' + b.patientName + ' — ' + condLabel + ' (' + dateLabel + ')</option>';
+  }).join('');
+}
+
+function savePatientDetails(event) {
+  if (event) event.preventDefault();
+
+  if (!ensureDoctorAccess('Add patient details')) return;
+
+  var selectEl = byId('detailsBookingSelect');
+  var diagnosisEl = byId('detailsDiagnosis');
+  var prescriptionEl = byId('detailsPrescription');
+  var notesEl = byId('detailsNotes');
+
+  var bookingId = selectEl ? Number(selectEl.value) : 0;
+  var diagnosis = diagnosisEl ? diagnosisEl.value.trim() : '';
+  var prescription = prescriptionEl ? prescriptionEl.value.trim() : '';
+  var notes = notesEl ? notesEl.value.trim() : '';
+
+  if (!bookingId) {
+    setFormMessage('detailsMsg', 'Please select a patient booking.', 'error');
+    return;
+  }
+
+  if (!diagnosis) {
+    setFormMessage('detailsMsg', 'Please enter a diagnosis.', 'error');
+    return;
+  }
+
+  var booking = appData.bookings.find(function(b) { return b.id === bookingId; });
+  if (!booking) {
+    setFormMessage('detailsMsg', 'Booking not found.', 'error');
+    return;
+  }
+
+  // Store patient details in appData
+  if (!appData.patientDetails) appData.patientDetails = [];
+
+  var detail = {
+    id: Date.now() + Math.floor(Math.random() * 1000),
+    bookingId: bookingId,
+    patientName: booking.patientName,
+    patientUsername: booking.patientUsername,
+    patientAge: booking.patientAge,
+    disease: booking.disease,
+    diagnosis: diagnosis,
+    prescription: prescription,
+    doctorNotes: notes,
+    doctorName: currentUserName,
+    sessionDate: booking.date,
+    sessionTime: booking.time,
+    createdAt: new Date().toISOString()
+  };
+
+  appData.patientDetails.unshift(detail);
+
+  // Mark booking as completed
+  booking.status = 'Completed';
+  booking.updatedAt = new Date().toISOString();
+
+  saveAppData();
+
+  // Also save to Firebase
+  if (typeof fbSavePatientDetails === 'function') {
+    fbSavePatientDetails(detail.id, detail);
+  }
+
+  // Clear form
+  if (diagnosisEl) diagnosisEl.value = '';
+  if (prescriptionEl) prescriptionEl.value = '';
+  if (notesEl) notesEl.value = '';
+
+  setFormMessage('detailsMsg', '✅ Patient details saved successfully!', 'success');
+  renderDoctorDashboard();
+  renderBookSessionPage();
+  renderPatientDashboard();
+  showToast('✅ Patient details saved for ' + booking.patientName, 'success');
+}
+
+function renderSavedPatientDetails() {
+  var list = byId('savedPatientDetailsList');
+  if (!list) return;
+
+  var details = Array.isArray(appData.patientDetails) ? appData.patientDetails : [];
+
+  if (details.length === 0) {
+    list.innerHTML = '<div class="stack-item"><div class="stack-item-sub">No patient records yet. Add details from the form above.</div></div>';
+    return;
+  }
+
+  list.innerHTML = details.slice(0, 10).map(function(d) {
+    return '<div class="patient-record-item">' +
+      '<div class="stack-item-title" style="margin-bottom:8px;">' + (d.patientName || 'Patient') + ' · ' + (d.patientAge || '') + ' yrs</div>' +
+      '<div class="record-label">Disease</div>' +
+      '<div class="record-value">' + getConditionLabel(d.disease) + '</div>' +
+      '<div class="record-label">Diagnosis</div>' +
+      '<div class="record-value">' + (d.diagnosis || '-') + '</div>' +
+      '<div class="record-label">Prescription</div>' +
+      '<div class="record-value">' + (d.prescription || '-') + '</div>' +
+      (d.doctorNotes ? '<div class="record-label">Doctor\'s Notes</div><div class="record-value">' + d.doctorNotes + '</div>' : '') +
+      '<div style="font-size:11px;color:var(--text-muted);margin-top:6px;">📅 ' + new Date(d.createdAt).toLocaleString(getCurrentLocale(), { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + '</div>' +
+    '</div>';
+  }).join('');
+}
+
+// ================= AUTO-ADD APPROVED BOOKINGS TO QUEUE =================
+function autoAddApprovedBookingsToQueue(bookingId) {
+  var booking = appData.bookings.find(function(b) { return b.id === bookingId; });
+  if (!booking) return;
+
+  // Check if this booking is already in the queue
+  var alreadyInQueue = patientQueue.some(function(p) {
+    return p.bookingId === bookingId;
+  });
+
+  if (alreadyInQueue) return;
+
+  var entry = {
+    id: Date.now(),
+    bookingId: bookingId,
+    patientUsername: booking.patientUsername || null,
+    name: booking.patientName,
+    condition: booking.disease,
+    conditionKey: booking.disease,
+    severity: 'medium',
+    time: new Date().toLocaleTimeString(getCurrentLocale(), { hour: '2-digit', minute: '2-digit' }),
+    wait: getWaitLabelBySeverity('medium'),
+    caseStudy: {
+      disease: getConditionLabel(booking.disease),
+      recoveryDetails: booking.notes || 'Booked session - ' + formatSessionDate(booking.date, booking.time),
+      addedBy: 'Booking System',
+      addedAt: new Date().toISOString()
+    }
+  };
+
+  patientQueue.push(entry);
+  patientQueue.sort(function(a, b) {
+    var order = { critical: 0, medium: 1, low: 2 };
+    return (order[a.severity] || 2) - (order[b.severity] || 2);
+  });
+
+  recordVisit(entry);
+  saveAppData();
+  renderQueue();
+  showToast('📋 ' + booking.patientName + ' added to doctor queue from booking', 'info');
+}
+
 function renderDoctorDashboard() {
+  renderDoctorProfile();
   renderDoctorStats();
   renderDoctorBookingList();
+  populateDetailsBookingSelect();
+  renderSavedPatientDetails();
+}
+
+function renderDoctorProfile() {
+  const nameEl = byId('doctorProfileName');
+  const qualEl = byId('doctorProfileQualification');
+  const expEl = byId('doctorProfileExperience');
+  const specEl = byId('doctorProfileSpecialties');
+  const locEl = byId('doctorProfileLocation');
+  const phoneEl = byId('doctorProfilePhone');
+  const emailEl = byId('doctorProfileEmail');
+
+  // Get doctor data from authUsers
+  const doctorUser = findUser('doctor', currentUserName);
+  if (doctorUser) {
+    if (nameEl) nameEl.textContent = doctorUser.displayName || doctorUser.username || 'Doctor';
+    if (qualEl) qualEl.textContent = doctorUser.qualification || 'Not specified';
+    if (expEl) expEl.textContent = doctorUser.experience ? doctorUser.experience + ' years' : 'Not specified';
+    if (specEl) specEl.textContent = doctorUser.specialties && doctorUser.specialties.length ? doctorUser.specialties.join(', ') : 'Not specified';
+    if (locEl) locEl.textContent = doctorUser.doctorLocation || doctorUser.address || 'Not specified';
+    if (phoneEl) phoneEl.textContent = doctorUser.phone || 'Not specified';
+    if (emailEl) emailEl.textContent = doctorUser.email || 'Not specified';
+  } else {
+    // Fallback
+    if (nameEl) nameEl.textContent = currentUserName || 'Doctor';
+    if (qualEl) qualEl.textContent = 'Not specified';
+    if (expEl) expEl.textContent = 'Not specified';
+    if (specEl) specEl.textContent = 'Not specified';
+    if (locEl) locEl.textContent = 'Not specified';
+    if (phoneEl) phoneEl.textContent = 'Not specified';
+    if (emailEl) emailEl.textContent = 'Not specified';
+  }
 }
 
 function scoreDoctorForCondition(doctor, conditionKey) {
@@ -2422,7 +3482,25 @@ function renderBestDoctorList(conditionKey) {
   const safeCondition = conditionKey && conditionKey !== 'auto' ? conditionKey : 'fever';
   const targetSpecialty = specialtyByCondition[safeCondition] || 'General Medicine';
 
-  const ranked = doctorsDirectory
+  // Combine hardcoded and registered doctors
+  let allDoctors = [...doctorsDirectory];
+
+  // Add registered doctors
+  registeredDoctorsCache.forEach(regDoc => {
+    if (regDoc.specialties && regDoc.specialties.length > 0) {
+      allDoctors.push({
+        id: 'reg_' + regDoc.username,
+        name: regDoc.displayName || regDoc.username,
+        specialties: regDoc.specialties,
+        rating: 4.0, // Default rating for registered doctors
+        experience: regDoc.experience || 0,
+        hospital: regDoc.doctorLocation || 'Private Practice',
+        isRegistered: true
+      });
+    }
+  });
+
+  const ranked = allDoctors
     .slice()
     .sort((a, b) => scoreDoctorForCondition(b, safeCondition) - scoreDoctorForCondition(a, safeCondition))
     .slice(0, 3);
@@ -2431,11 +3509,12 @@ function renderBestDoctorList(conditionKey) {
     .map((doctor, index) => {
       const match = doctor.specialties.includes(targetSpecialty) ? t('best_doctor.best_match') : t('best_doctor.alternative');
       const specialties = doctor.specialties.map((item) => getSpecialtyLabel(item)).join(', ');
+      const hospitalText = doctor.isRegistered ? doctor.hospital : localizeHospitalNameByValue(doctor.hospital);
       return `
         <div class="stack-item">
           <div class="stack-item-title">#${index + 1} ${doctor.name}</div>
           <div class="stack-item-sub">${specialties}</div>
-          <div class="stack-item-sub">${localizeHospitalNameByValue(doctor.hospital)} · ${doctor.experience} ${t('common.years_exp')} · ${doctor.rating.toFixed(1)}★</div>
+          <div class="stack-item-sub">${hospitalText} · ${doctor.experience} ${t('common.years_exp')} · ${doctor.rating.toFixed(1)}★</div>
           <span class="status-badge ${doctor.specialties.includes(targetSpecialty) ? 'status-approved' : 'status-pending'}">${match}</span>
         </div>
       `;
@@ -2765,6 +3844,11 @@ function addReminder() {
   renderReminders();
   renderPatientDashboard();
   showToast(t('reminder.success.added'), 'success');
+
+  // Reschedule notifications after adding new reminder
+  if (Notification.permission === 'granted') {
+    scheduleMedicineNotifications();
+  }
 }
 
 function toggleDone(id) {
@@ -2775,6 +3859,11 @@ function toggleDone(id) {
   persistRemindersForCurrentUser();
   renderReminders();
   renderPatientDashboard();
+
+  // Reschedule notifications after toggling done status
+  if (Notification.permission === 'granted') {
+    scheduleMedicineNotifications();
+  }
 }
 
 function deleteReminder(id) {
@@ -2782,6 +3871,11 @@ function deleteReminder(id) {
   persistRemindersForCurrentUser();
   renderReminders();
   renderPatientDashboard();
+
+  // Reschedule notifications after deleting reminder
+  if (Notification.permission === 'granted') {
+    scheduleMedicineNotifications();
+  }
 }
 
 function renderReminders() {
@@ -2829,6 +3923,163 @@ function showToast(msg, type = 'info') {
   }, 3000);
 }
 
+// ================= NOTIFICATION FUNCTIONS =================
+
+async function requestNotificationPermission() {
+  if (!('Notification' in window)) {
+    console.warn('This browser does not support notifications');
+    return false;
+  }
+
+  if (Notification.permission === 'granted') {
+    return true;
+  }
+
+  if (Notification.permission === 'denied') {
+    showToast('Notifications are blocked. Please enable them in browser settings.', 'error');
+    return false;
+  }
+
+  try {
+    const permission = await Notification.requestPermission();
+    return permission === 'granted';
+  } catch (error) {
+    console.error('Error requesting notification permission:', error);
+    return false;
+  }
+}
+
+function scheduleMedicineNotifications() {
+  // Clear any existing notification timers
+  if (window.medicineNotificationTimers) {
+    window.medicineNotificationTimers.forEach(timer => clearTimeout(timer));
+  }
+  window.medicineNotificationTimers = [];
+
+  if (!reminders || reminders.length === 0) {
+    return;
+  }
+
+  const now = new Date();
+  const today = now.toDateString();
+
+  reminders.forEach(reminder => {
+    if (reminder.done) return; // Skip completed reminders
+
+    const reminderTime = parseReminderTime(reminder.time);
+    if (!reminderTime) return;
+
+    const reminderDateTime = new Date(today + ' ' + reminderTime);
+
+    // If the time has already passed today, schedule for tomorrow
+    if (reminderDateTime < now) {
+      reminderDateTime.setDate(reminderDateTime.getDate() + 1);
+    }
+
+    const timeUntilNotification = reminderDateTime - now;
+
+    // Schedule notification (max 24 hours in advance for demo purposes)
+    if (timeUntilNotification > 0 && timeUntilNotification <= 24 * 60 * 60 * 1000) {
+      const timer = setTimeout(() => {
+        showMedicineNotification(reminder);
+      }, timeUntilNotification);
+
+      window.medicineNotificationTimers.push(timer);
+    }
+  });
+}
+
+function parseReminderTime(timeString) {
+  const timeMap = {
+    'Early Morning 6:00 AM': '6:00',
+    'Morning 8:00 AM': '8:00',
+    'Mid-Morning 10:00 AM': '10:00',
+    'Lunch Time 12:00 PM': '12:00',
+    'Afternoon 1:00 PM': '13:00',
+    'Late Afternoon 4:00 PM': '16:00',
+    'Evening 6:00 PM': '18:00',
+    'Dinner Time 8:00 PM': '20:00',
+    'Night 10:00 PM': '22:00',
+    'Bedtime 11:00 PM': '23:00'
+  };
+
+  return timeMap[timeString] || null;
+}
+
+function showMedicineNotification(reminder) {
+  if (Notification.permission !== 'granted') {
+    return;
+  }
+
+  const title = `💊 Medicine Reminder: ${reminder.name}`;
+  const options = {
+    body: `Time to take your ${reminder.name}${reminder.notes ? ' - ' + reminder.notes : ''}`,
+    icon: '/favicon.ico', // You can add a custom icon
+    badge: '/favicon.ico',
+    tag: `medicine-${reminder.id}`, // Prevents duplicate notifications
+    requireInteraction: true, // Keeps notification visible until user interacts
+    actions: [
+      {
+        action: 'mark-done',
+        title: 'Mark as Taken'
+      },
+      {
+        action: 'snooze',
+        title: 'Remind Later (15 min)'
+      }
+    ]
+  };
+
+  const notification = new Notification(title, options);
+
+  // Handle notification click
+  notification.onclick = function() {
+    window.focus();
+    navigateToPage('reminder');
+    notification.close();
+  };
+
+  // Auto-close after 30 seconds if not interacted with
+  setTimeout(() => {
+    notification.close();
+  }, 30000);
+}
+
+// Initialize notifications when app starts
+async function initializeNotifications() {
+  const permissionGranted = await requestNotificationPermission();
+  if (permissionGranted) {
+    scheduleMedicineNotifications();
+  }
+  updateNotificationButton();
+}
+
+async function enableNotifications() {
+  const permissionGranted = await requestNotificationPermission();
+  if (permissionGranted) {
+    scheduleMedicineNotifications();
+    showToast('Notifications enabled! You will receive reminders at the scheduled times.', 'success');
+    updateNotificationButton();
+  } else {
+    showToast('Notification permission denied. You can enable it later in browser settings.', 'error');
+  }
+}
+
+function updateNotificationButton() {
+  const btn = byId('enableNotificationsBtn');
+  if (!btn) return;
+
+  if (Notification.permission === 'granted') {
+    btn.textContent = 'Notifications Enabled ✓';
+    btn.disabled = true;
+    btn.style.opacity = '0.6';
+  } else {
+    btn.textContent = 'Enable Notifications';
+    btn.disabled = false;
+    btn.style.opacity = '1';
+  }
+}
+
 async function initializeApp() {
   bindAuthForms();
   await initializeLanguageControls();
@@ -2845,6 +4096,9 @@ async function initializeApp() {
   renderBookSessionPage();
   renderPatientDashboard();
 
+  // Initialize notifications
+  await initializeNotifications();
+
   const loginScreen = byId('loginScreen');
   const app = byId('app');
 
@@ -2853,6 +4107,15 @@ async function initializeApp() {
   }
   if (app) {
     app.classList.add('hidden');
+  }
+
+  // Initialize Firebase default users in the background
+  if (typeof fbInitDefaultUsers === 'function') {
+    fbInitDefaultUsers(defaultCredentials).then(function() {
+      console.log('✅ Firebase default users ready');
+    }).catch(function(err) {
+      console.warn('Firebase default user init failed (non-critical):', err);
+    });
   }
 }
 

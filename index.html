@@ -6,6 +6,11 @@
 <title>MedReach — Smart Rural Healthcare System</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
+
+<!-- Firebase Compat SDK (CDN — no bundler required) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
@@ -25,95 +30,252 @@
     <p class="section-sub login-sub">Select your role to open Doctor or Patient portal.</p>
 
     <div class="info-box" id="loginInfoBox" style="margin-top: 16px;">
-      Default login: <strong>doctor / doctor123</strong> and <strong>patient / patient123</strong>. You can also register new Doctor/Patient accounts below.
+      Default login: <strong>doctor / doctor123</strong> and <strong>patient / patient123</strong>. You can also register new Doctor/Patient accounts.
     </div>
 
-    <form id="loginForm">
-      <div class="input-group">
-        <label class="input-label" for="loginRole">Login Role</label>
-        <select class="input-field" id="loginRole">
-          <option value="patient">Patient</option>
-          <option value="doctor">Doctor</option>
-        </select>
-      </div>
-
-      <div class="input-group">
-        <label class="input-label" for="loginUsername">Username</label>
-        <input type="text" class="input-field" id="loginUsername" placeholder="Enter username" autocomplete="username">
-      </div>
-
-      <div class="input-group">
-        <label class="input-label" for="loginPassword">Password</label>
-        <input type="password" class="input-field" id="loginPassword" placeholder="Enter password" autocomplete="current-password">
-      </div>
-
-      <button type="submit" class="btn-primary login-btn">Login</button>
-      <div id="loginError" class="login-error"></div>
-    </form>
-
-    <div class="divider auth-divider"></div>
-
-    <div class="auth-title" id="registerPromptTitle">New Registration</div>
-    <div class="auth-link-row">
-      <button type="button" class="auth-link-btn" onclick="openRegisterForm('patient')">Register as Patient</button>
-      <span class="auth-link-sep">|</span>
-      <button type="button" class="auth-link-btn" onclick="openRegisterForm('doctor')">Register as Doctor</button>
+    <!-- Tabs -->
+    <div class="auth-tabs">
+      <button type="button" class="auth-tab active" id="loginTab" onclick="switchTab('login')">Login</button>
+      <button type="button" class="auth-tab" id="registerTab" onclick="switchTab('register')">Register</button>
     </div>
 
-    <form id="registerForm" class="hidden">
-      <div class="auth-inline">
-        <div class="auth-title" id="registerFormTitle">Patient Registration</div>
-        <button type="button" class="auth-link-btn auth-link-close" onclick="closeRegisterForm()">Back to Login</button>
-      </div>
-      <div class="input-group">
-        <label class="input-label" for="registerRole">Register As</label>
-        <select class="input-field" id="registerRole">
-          <option value="patient">Patient</option>
-          <option value="doctor">Doctor</option>
-        </select>
+    <!-- Login Form -->
+    <div id="loginFormContainer" class="auth-form-container">
+      <form id="loginForm">
+        <div class="input-group">
+          <label class="input-label" for="loginRole">Login Role</label>
+          <select class="input-field" id="loginRole">
+            <option value="patient">Patient</option>
+            <option value="doctor">Doctor</option>
+          </select>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label" for="loginUsername">Username</label>
+          <input type="text" class="input-field" id="loginUsername" placeholder="Enter username" autocomplete="username">
+        </div>
+
+        <div class="input-group">
+          <label class="input-label" for="loginPassword">Password</label>
+          <input type="password" class="input-field" id="loginPassword" placeholder="Enter password" autocomplete="current-password">
+        </div>
+
+        <button type="submit" class="btn-primary login-btn">Login</button>
+        <div class="forgot-password">
+          <a href="#" onclick="showForgotPassword()">Forgot Password?</a>
+        </div>
+        <div id="loginError" class="login-error"></div>
+      </form>
+    </div>
+
+    <!-- Register Form -->
+    <div id="registerFormContainer" class="auth-form-container hidden">
+      <div class="auth-title" id="registerFormTitle">Patient Registration</div>
+      <form id="registerForm">
+        <div class="input-group">
+          <label class="input-label" for="registerRole">Register As</label>
+          <select class="input-field" id="registerRole">
+            <option value="patient">Patient</option>
+            <option value="doctor">Doctor</option>
+          </select>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label" for="registerUsername">Username</label>
+          <input type="text" class="input-field" id="registerUsername" placeholder="Choose username" autocomplete="off">
+          <div class="field-error" id="registerUsernameError"></div>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label" for="registerPassword">Password</label>
+          <input type="password" class="input-field" id="registerPassword" placeholder="Create password" autocomplete="new-password">
+          <div class="field-error" id="registerPasswordError"></div>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label" for="registerConfirmPassword">Confirm Password</label>
+          <input type="password" class="input-field" id="registerConfirmPassword" placeholder="Confirm password" autocomplete="new-password">
+          <div class="field-error" id="registerConfirmPasswordError"></div>
+        </div>
+
+        <div class="divider auth-divider"></div>
+        <div class="auth-title">Contact Details</div>
+
+        <div class="input-group">
+          <label class="input-label" for="registerPhone">Phone Number</label>
+          <input type="tel" class="input-field" id="registerPhone" placeholder="Enter mobile number" autocomplete="tel">
+          <button type="button" class="btn-sec" id="sendOtpBtn" onclick="sendOtp()">Send OTP</button>
+          <div class="field-error" id="registerPhoneError"></div>
+        </div>
+
+        <div class="input-group" id="otpGroup" style="display: none;">
+          <label class="input-label" for="registerOtp">Enter OTP</label>
+          <input type="text" class="input-field" id="registerOtp" placeholder="Enter 6-digit OTP" maxlength="6">
+          <button type="button" class="btn-sec" id="verifyOtpBtn" onclick="verifyOtp()">Verify OTP</button>
+          <div class="field-error" id="registerOtpError"></div>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label" for="registerEmail">Email Address</label>
+          <input type="email" class="input-field" id="registerEmail" placeholder="Enter email address" autocomplete="email">
+          <div class="field-error" id="registerEmailError"></div>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label" for="registerState">State</label>
+          <input type="text" class="input-field" id="registerState" placeholder="Enter state name" autocomplete="address-level1">
+          <div class="field-error" id="registerStateError"></div>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label" for="registerAddress">Address</label>
+          <input type="text" class="input-field" id="registerAddress" placeholder="Enter address" autocomplete="street-address">
+          <div class="field-error" id="registerAddressError"></div>
+        </div>
+
+        <div class="input-group">
+          <button type="button" class="btn-sec" id="getLocationBtn" onclick="getLiveLocation()">📍 Get Live Location</button>
+        </div>
+
+        <!-- Doctor-specific fields -->
+        <div id="doctorFields" class="hidden">
+          <div class="divider auth-divider"></div>
+          <div class="auth-title">Doctor Details</div>
+
+          <div class="input-group">
+            <label class="input-label" for="registerQualification">Qualification</label>
+            <select class="input-field" id="registerQualification">
+              <option value="">Select Qualification</option>
+              <option value="MBBS">MBBS</option>
+              <option value="MD">MD</option>
+              <option value="MS">MS</option>
+              <option value="BDS">BDS</option>
+              <option value="MDS">MDS</option>
+              <option value="BHMS">BHMS</option>
+              <option value="BAMS">BAMS</option>
+              <option value="Other">Other</option>
+            </select>
+            <div class="field-error" id="registerQualificationError"></div>
+          </div>
+
+          <div class="input-group">
+            <label class="input-label" for="registerExperience">Years of Experience</label>
+            <input type="number" class="input-field" id="registerExperience" placeholder="Enter years of experience" min="0" max="50">
+            <div class="field-error" id="registerExperienceError"></div>
+          </div>
+
+          <div class="input-group">
+            <label class="input-label">Specialties</label>
+            <div class="specialties-grid" id="registerSpecialties">
+              <label class="specialty-checkbox">
+                <input type="checkbox" value="General Medicine"> General Medicine
+              </label>
+              <label class="specialty-checkbox">
+                <input type="checkbox" value="Cardiology"> Cardiology
+              </label>
+              <label class="specialty-checkbox">
+                <input type="checkbox" value="Pulmonology"> Pulmonology
+              </label>
+              <label class="specialty-checkbox">
+                <input type="checkbox" value="Neurology"> Neurology
+              </label>
+              <label class="specialty-checkbox">
+                <input type="checkbox" value="Orthopedics"> Orthopedics
+              </label>
+              <label class="specialty-checkbox">
+                <input type="checkbox" value="Dermatology"> Dermatology
+              </label>
+              <label class="specialty-checkbox">
+                <input type="checkbox" value="Pediatrics"> Pediatrics
+              </label>
+              <label class="specialty-checkbox">
+                <input type="checkbox" value="Gynecology"> Gynecology
+              </label>
+              <label class="specialty-checkbox">
+                <input type="checkbox" value="Ophthalmology"> Ophthalmology
+              </label>
+              <label class="specialty-checkbox">
+                <input type="checkbox" value="ENT"> ENT
+              </label>
+              <label class="specialty-checkbox">
+                <input type="checkbox" value="Dentistry"> Dentistry
+              </label>
+              <label class="specialty-checkbox">
+                <input type="checkbox" value="Psychiatry"> Psychiatry
+              </label>
+            </div>
+            <div class="field-error" id="registerSpecialtiesError"></div>
+          </div>
+
+          <div class="input-group">
+            <label class="input-label" for="registerDoctorLocation">Practice Location</label>
+            <input type="text" class="input-field" id="registerDoctorLocation" placeholder="Enter practice location" autocomplete="address">
+            <div class="field-error" id="registerDoctorLocationError"></div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-sec register-btn">Create Account</button>
+        <div id="registerError" class="login-error register-error"></div>
+      </form>
+    </div>
+
+    <!-- Forgot Password Form -->
+    <div id="forgotPasswordForm" class="auth-form-container hidden">
+      <div class="auth-title" data-i18n="forgot.title">Reset Password</div>
+      <p data-i18n="forgot.subtitle">Enter your username and role to reset your password using OTP verification.</p>
+      <form id="resetPasswordForm" onsubmit="sendPasswordResetOtp(event)">
+        <div class="input-group">
+          <label class="input-label" for="resetRole" data-i18n="forgot.role">Role</label>
+          <select class="input-field" id="resetRole" required>
+            <option value="patient" data-i18n="roles.patient">Patient</option>
+            <option value="doctor" data-i18n="roles.doctor">Doctor</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label class="input-label" for="resetUsername" data-i18n="forgot.username">Username</label>
+          <input type="text" class="input-field" id="resetUsername" placeholder="Enter your username" required>
+        </div>
+        <button type="submit" class="btn-primary" data-i18n="forgot.send_otp">Send OTP</button>
+        <button type="button" class="btn-sec" onclick="hideForgotPassword()" data-i18n="forgot.back_to_login">Back to Login</button>
+        <div id="resetError" class="login-error"></div>
+      </form>
+
+      <!-- OTP Verification Form -->
+      <div id="resetOtpForm" class="auth-form-container hidden">
+        <div class="auth-title" data-i18n="forgot.otp_title">Verify OTP</div>
+        <p data-i18n="forgot.otp_subtitle">Enter the 6-digit OTP sent to your registered phone number.</p>
+        <form id="verifyResetOtpForm" onsubmit="verifyResetOtp(event)">
+          <div class="input-group">
+            <label class="input-label" for="resetOtp" data-i18n="forgot.otp_placeholder">Enter OTP</label>
+            <input type="text" class="input-field" id="resetOtp" placeholder="Enter 6-digit OTP" maxlength="6" required>
+          </div>
+          <button type="submit" class="btn-primary" data-i18n="forgot.verify_otp">Verify OTP</button>
+          <button type="button" class="btn-sec" onclick="backToResetUsername()" data-i18n="forgot.back">Back</button>
+          <div id="resetOtpError" class="login-error"></div>
+        </form>
       </div>
 
-      <div class="input-group">
-        <label class="input-label" for="registerUsername">Username</label>
-        <input type="text" class="input-field" id="registerUsername" placeholder="Choose username" autocomplete="off">
+      <!-- New Password Form -->
+      <div id="resetPasswordNewForm" class="auth-form-container hidden">
+        <div class="auth-title" data-i18n="forgot.new_password_title">Set New Password</div>
+        <p data-i18n="forgot.new_password_subtitle">Enter your new password.</p>
+        <form id="setNewPasswordForm" onsubmit="setNewPassword(event)">
+          <div class="input-group">
+            <label class="input-label" for="newPassword" data-i18n="forgot.new_password">New Password</label>
+            <input type="password" class="input-field" id="newPassword" placeholder="Enter new password" onblur="validateNewPassword()" required>
+            <div class="field-error" id="newPasswordError"></div>
+          </div>
+          <div class="input-group">
+            <label class="input-label" for="confirmNewPassword" data-i18n="forgot.confirm_new_password">Confirm New Password</label>
+            <input type="password" class="input-field" id="confirmNewPassword" placeholder="Confirm new password" onblur="validateConfirmNewPassword()" required>
+            <div class="field-error" id="confirmNewPasswordError"></div>
+          </div>
+          <button type="submit" class="btn-primary" data-i18n="forgot.update_password">Update Password</button>
+          <button type="button" class="btn-sec" onclick="hideForgotPassword()" data-i18n="forgot.cancel">Cancel</button>
+          <div id="newPasswordError" class="login-error"></div>
+        </form>
       </div>
-
-      <div class="input-group">
-        <label class="input-label" for="registerPassword">Password</label>
-        <input type="password" class="input-field" id="registerPassword" placeholder="Create password" autocomplete="new-password">
-      </div>
-
-      <div class="input-group">
-        <label class="input-label" for="registerConfirmPassword">Confirm Password</label>
-        <input type="password" class="input-field" id="registerConfirmPassword" placeholder="Confirm password" autocomplete="new-password">
-      </div>
-
-      <div class="divider auth-divider"></div>
-      <div class="auth-title">Contact Details</div>
-
-      <div class="input-group">
-        <label class="input-label" for="registerPhone">Phone Number</label>
-        <input type="tel" class="input-field" id="registerPhone" placeholder="Enter mobile number" autocomplete="tel">
-      </div>
-
-      <div class="input-group">
-        <label class="input-label" for="registerEmail">Email Address</label>
-        <input type="email" class="input-field" id="registerEmail" placeholder="Enter email address" autocomplete="email">
-      </div>
-
-      <div class="input-group">
-        <label class="input-label" for="registerState">State</label>
-        <input type="text" class="input-field" id="registerState" placeholder="Enter state name" autocomplete="address-level1">
-      </div>
-
-      <div class="input-group">
-        <label class="input-label" for="registerAddress">Address</label>
-        <input type="text" class="input-field" id="registerAddress" placeholder="Enter address" autocomplete="street-address">
-      </div>
-
-      <button type="submit" class="btn-sec register-btn">Create Account</button>
-      <div id="registerError" class="login-error register-error"></div>
-    </form>
+    </div>
   </div>
 </div>
 
@@ -187,6 +349,18 @@
           <span class="mod-icon">🗓️</span>
           <div class="mod-title" id="homeCardTitleBook">Book Doctor Session</div>
           <div class="mod-desc" id="homeCardDescBook">Register and book a session with available doctors directly from your patient portal.</div>
+        </div>
+      </div>
+
+      <!-- Our Doctors Section -->
+      <div class="doctors-directory-section">
+        <div class="section-head" style="margin-top:40px;">
+          <div class="section-tag" id="doctorsDirectoryTag">Our Team</div>
+          <div class="section-title" id="doctorsDirectoryTitle">👨‍⚕️ Our Doctors</div>
+          <div class="section-sub" id="doctorsDirectorySub">Meet our experienced medical professionals — local specialists and registered practitioners ready to serve you.</div>
+        </div>
+        <div class="doctors-grid" id="doctorsDirectoryGrid">
+          <!-- Rendered by JS -->
         </div>
       </div>
     </div>
@@ -290,6 +464,19 @@
       <div class="section-sub" id="doctorDashboardSub">Monitor patient flow, check completed cases, and manage booking requests.</div>
     </div>
 
+    <div class="card" style="margin-bottom: 24px;">
+      <div class="card-head">👨‍⚕️ Doctor Profile</div>
+      <div class="profile-info">
+        <div class="profile-row"><strong>Name:</strong> <span id="doctorProfileName">Dr. [Name]</span></div>
+        <div class="profile-row"><strong>Qualification:</strong> <span id="doctorProfileQualification">[Qualification]</span></div>
+        <div class="profile-row"><strong>Experience:</strong> <span id="doctorProfileExperience">[Experience]</span></div>
+        <div class="profile-row"><strong>Specialties:</strong> <span id="doctorProfileSpecialties">[Specialties]</span></div>
+        <div class="profile-row"><strong>Practice Location:</strong> <span id="doctorProfileLocation">[Location]</span></div>
+        <div class="profile-row"><strong>Phone:</strong> <span id="doctorProfilePhone">[Phone]</span></div>
+        <div class="profile-row"><strong>Email:</strong> <span id="doctorProfileEmail">[Email]</span></div>
+      </div>
+    </div>
+
     <div class="queue-stats">
       <div class="stat-card">
         <div class="stat-num" style="color:var(--accent)" id="doc-stat-visited">0</div>
@@ -309,10 +496,37 @@
       </div>
     </div>
 
-    <div class="dashboard-grid single-card-grid">
+    <div class="dashboard-grid">
       <div class="card">
         <div class="card-head" id="doctorCardHeadSessionRequests">Session Registration Requests</div>
         <div id="doctorBookingList" class="stack-list"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head" id="doctorCardHeadPatientDetails">📋 Add Patient Details</div>
+        <form id="patientDetailsForm" onsubmit="savePatientDetails(event)">
+          <div class="input-group">
+            <label class="input-label" for="detailsBookingSelect">Select Patient (from bookings)</label>
+            <select class="input-field" id="detailsBookingSelect"></select>
+          </div>
+          <div class="input-group">
+            <label class="input-label" for="detailsDiagnosis">Diagnosis</label>
+            <input type="text" class="input-field" id="detailsDiagnosis" placeholder="e.g. Viral Fever, Upper Respiratory Infection">
+          </div>
+          <div class="input-group">
+            <label class="input-label" for="detailsPrescription">Prescription</label>
+            <textarea class="input-field" id="detailsPrescription" rows="3" placeholder="e.g. Paracetamol 500mg x 3 times daily for 5 days..."></textarea>
+          </div>
+          <div class="input-group">
+            <label class="input-label" for="detailsNotes">Doctor's Notes</label>
+            <textarea class="input-field" id="detailsNotes" rows="2" placeholder="Additional observations or follow-up instructions..."></textarea>
+          </div>
+          <button class="btn-primary" type="submit">💾 Save Patient Details</button>
+          <div id="detailsMsg" class="form-msg"></div>
+        </form>
+        <div class="divider" style="margin:20px 0;"></div>
+        <div class="card-head" id="doctorCardHeadSavedDetails">📑 Saved Patient Records</div>
+        <div id="savedPatientDetailsList" class="stack-list"></div>
       </div>
     </div>
   </div>
@@ -395,6 +609,52 @@
         <div id="noResult" style="color:var(--text-muted);font-size:14px;padding:20px 0;">
           Select symptoms and click <strong style="color:var(--accent)">Analyze</strong> to see results.
         </div>
+    </div>
+  </div>
+
+    <!-- AI Doctor Assistant -->
+    <div class="ai-section" id="aiDoctorSection">
+      <div class="divider" style="margin:40px 0;"></div>
+      <div class="section-head">
+        <div class="section-tag" id="aiSectionTag">AI Assistant</div>
+        <div class="section-title" id="aiSectionTitle">🤖 AI Doctor</div>
+        <div class="section-sub" id="aiSectionSub">Describe your symptoms in your own words — in English, Hindi, or Marathi. The AI will analyze and suggest the best doctor for you.</div>
+      </div>
+
+      <div class="ai-chat-grid">
+        <div class="card">
+          <!-- API Key Section -->
+          <div class="ai-key-section" id="aiKeySection">
+            <div class="input-group">
+              <label class="input-label" id="aiApiKeyLabel">Groq API Key</label>
+              <div style="display:flex;gap:8px;">
+                <input type="password" class="input-field" id="aiApiKeyInput" placeholder="Paste your Groq API key" style="flex:1;">
+                <button class="btn-sec" style="width:auto;white-space:nowrap;" onclick="handleAIApiKeySave()" id="aiSaveKeyBtn">Save Key</button>
+              </div>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">
+                Get your free key from <a href="https://console.groq.com/keys" target="_blank" style="color:var(--accent);">Groq Console</a>
+              </div>
+            </div>
+          </div>
+          <div class="ai-key-status hidden" id="aiKeyStatus">
+            <span id="aiKeyStatusText">✅ API Key saved</span>
+            <button class="auth-link-btn" onclick="showAIKeyInput()" id="aiChangeKeyBtn">Change</button>
+          </div>
+
+          <!-- Symptom Input -->
+          <div class="input-group">
+            <label class="input-label" id="aiDescribeLabel">Describe your symptoms</label>
+            <textarea class="input-field ai-textarea" id="aiSymptomInput" rows="4" placeholder="e.g. I have been having headaches and fever for 2 days, feeling very tired and nauseous..."></textarea>
+          </div>
+          <button class="btn-primary ai-ask-btn" id="aiAnalyzeBtn" onclick="handleAIAnalysis()">🤖 Ask AI Doctor</button>
+        </div>
+
+        <div id="aiResultArea">
+          <div id="aiNoResult" style="color:var(--text-muted);font-size:14px;padding:20px 0;">
+            Describe your symptoms and click <strong style="color:var(--accent)">Ask AI Doctor</strong> for an AI-powered analysis.
+          </div>
+          <div id="aiResultCard" class="result-card" style="display:none;"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -445,6 +705,29 @@
       <div class="section-tag" id="bookingSectionTag">Patient Services</div>
       <div class="section-title" id="bookingSectionTitle">Doctor Session Registration</div>
       <div class="section-sub" id="bookingSectionSub">Register and book a consultation slot with the most suitable doctor.</div>
+    </div>
+
+    <!-- DOCTOR BROWSER SECTION -->
+    <div style="margin-bottom:30px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h3 style="font-size:18px;font-weight:600;margin:0;">🩺 Browse Doctors</h3>
+      </div>
+      <div style="display:flex;gap:12px;margin-bottom:16px;">
+        <input type="text" id="doctorSearchInput" placeholder="Search by name, specialty, or location..." class="input-field" style="flex:1;" oninput="filterDoctorList()">
+        <select id="doctorSpecialtyFilter" class="input-field" style="flex:0 0 200px;" onchange="filterDoctorList()">
+          <option value="">All Specialties</option>
+          <option value="General Medicine">General Medicine</option>
+          <option value="Cardiology">Cardiology</option>
+          <option value="Dermatology">Dermatology</option>
+          <option value="Gastroenterology">Gastroenterology</option>
+          <option value="Neurology">Neurology</option>
+          <option value="Orthopedics">Orthopedics</option>
+          <option value="Pulmonology">Pulmonology</option>
+        </select>
+      </div>
+      <div id="doctorListContainer" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-bottom:24px;">
+        <!-- Populated by renderDoctorList() -->
+      </div>
     </div>
 
     <div class="dashboard-grid">
@@ -597,10 +880,16 @@
         <div class="input-group">
           <label class="input-label" for="medTime">Time of Day</label>
           <select class="input-field" id="medTime">
+            <option value="Early Morning 6:00 AM">🌅 Early Morning — 6:00 AM</option>
             <option value="Morning 8:00 AM">🌅 Morning — 8:00 AM</option>
+            <option value="Mid-Morning 10:00 AM">☀️ Mid-Morning — 10:00 AM</option>
+            <option value="Lunch Time 12:00 PM">🍽️ Lunch Time — 12:00 PM</option>
             <option value="Afternoon 1:00 PM">☀️ Afternoon — 1:00 PM</option>
+            <option value="Late Afternoon 4:00 PM">🌇 Late Afternoon — 4:00 PM</option>
             <option value="Evening 6:00 PM">🌇 Evening — 6:00 PM</option>
+            <option value="Dinner Time 8:00 PM">🍽️ Dinner Time — 8:00 PM</option>
             <option value="Night 10:00 PM">🌙 Night — 10:00 PM</option>
+            <option value="Bedtime 11:00 PM">😴 Bedtime — 11:00 PM</option>
           </select>
         </div>
         <div class="input-group">
@@ -617,6 +906,15 @@
           <input type="text" class="input-field" id="medNotes" placeholder="e.g. After meals">
         </div>
         <button class="btn-primary" id="addReminderBtn" onclick="addReminder()">+ Add Reminder</button>
+        
+        <div style="margin-top:16px;padding:12px;background:var(--bg-card);border-radius:8px;border:1px solid var(--border);">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+            <span style="font-size:16px;">🔔</span>
+            <span style="font-weight:600;font-size:14px;">Browser Notifications</span>
+          </div>
+          <p style="font-size:12px;color:var(--text-muted);margin:0 0 12px 0;">Get real-time reminders on your device when it's time to take your medicine.</p>
+          <button class="btn-sec" id="enableNotificationsBtn" onclick="enableNotifications()" style="width:100%;">Enable Notifications</button>
+        </div>
       </div>
 
       <div>
@@ -635,6 +933,8 @@
 
 <!-- TOAST -->
 <div id="toast"></div>
+<script src="firebase-config.js"></script>
 <script src="script.js"></script>
+<script src="ai-symptom.js"></script>
 </body>
 </html>
