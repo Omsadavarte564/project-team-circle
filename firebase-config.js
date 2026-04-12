@@ -240,4 +240,33 @@ async function fbSavePatientDetails(bookingId, details) {
   }
 }
 
+// ================= DELETE ACCOUNT =================
+
+/**
+ * Delete a user account from Firebase Authentication and Firestore.
+ * Requires the user to be currently signed in.
+ * Returns { success: true } on success or { success: false, error, message } on failure.
+ */
+async function fbDeleteUserAccount() {
+  try {
+    const currentUser = fbAuth.currentUser;
+    if (!currentUser) {
+      return { success: false, error: 'no-user', message: 'No user is currently signed in.' };
+    }
+
+    const uid = currentUser.uid;
+
+    // Delete user document from Firestore
+    await fbDb.collection('users').doc(uid).delete();
+
+    // Delete user from Firebase Authentication
+    await currentUser.delete();
+
+    return { success: true };
+  } catch (error) {
+    console.warn('Failed to delete user account:', error);
+    return { success: false, error: error.code, message: error.message };
+  }
+}
+
 console.log('🔥 Firebase initialized for MedReach');

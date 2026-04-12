@@ -2091,6 +2091,59 @@ async function logoutUser() {
   showToast(t('auth.success.logout'), 'info');
 }
 
+/**
+ * Show delete account confirmation dialog
+ */
+function showDeleteAccountConfirmation() {
+  const modal = byId('deleteAccountModal');
+  if (modal) {
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+  }
+}
+
+/**
+ * Cancel delete account
+ */
+function cancelDeleteAccount() {
+  const modal = byId('deleteAccountModal');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.style.display = 'none';
+  }
+}
+
+/**
+ * Confirm and execute delete account
+ */
+async function confirmDeleteAccount() {
+  const modal = byId('deleteAccountModal');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.style.display = 'none';
+  }
+
+  try {
+    showToast('Deleting your account...', 'info');
+    
+    const result = await fbDeleteUserAccount();
+    
+    if (result.success) {
+      showToast('Account deleted successfully. Logging you out...', 'success');
+      
+      // Wait a moment before logging out
+      setTimeout(() => {
+        logoutUser();
+      }, 1500);
+    } else {
+      showToast('Error deleting account: ' + result.message, 'error');
+    }
+  } catch (error) {
+    console.error('Error in confirmDeleteAccount:', error);
+    showToast('An error occurred while deleting your account. Please try again.', 'error');
+  }
+}
+
 function bindAuthForms() {
   const loginForm = byId('loginForm');
   if (loginForm && !loginForm.dataset.boundSubmit) {
