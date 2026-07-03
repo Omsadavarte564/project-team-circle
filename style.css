@@ -55,6 +55,11 @@ body::before {
 }
 .login-card {
   width: min(100%, 460px);
+  background: rgba(255,255,255,0.96);
+  border: 1px solid rgba(47,158,103,0.16);
+  border-radius: 22px;
+  padding: 28px;
+  box-shadow: 0 18px 40px rgba(47,158,103,0.12);
 }
 .login-language-wrap {
   display: flex;
@@ -284,7 +289,7 @@ background-color: var(--surface2); }
 }
 
 /* ---- PAGES ---- */
-.page { display: none; padding: 40px 32px; max-width: 1100px; margin: 0 auto; }
+.page { display: none; padding: 40px 32px; max-width: 1150px; margin: 0 auto; }
 .page.active { display: block; animation: fadeUp 0.4s ease; }
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(16px); }
@@ -833,7 +838,7 @@ background-color: var(--surface2); }
   opacity: 0.08;
   transition: opacity 0.2s;
 }
-.module-card:hover { transform: translateY(-3px); }
+.module-card:hover { transform: translateY(-4px); box-shadow: 0 16px 32px rgba(47,158,103,0.14); }
 .module-card:hover::before { opacity: 0.15; }
 .mc-1::before { background: var(--accent); }
 .mc-2::before { background: var(--accent4); }
