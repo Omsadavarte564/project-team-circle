@@ -299,6 +299,11 @@ background-color: var(--surface2); }
 /* ---- SECTION HEADERS ---- */
 .section-head {
   margin-bottom: 32px;
+  margin-bottom: 32px;
+    border-radius: 5px;
+    padding: 5px 5px;
+    padding-bottom: 14px;
+    border-bottom: 3px solid #8cb087;
 }
 .section-tag {
   display: inline-block;
@@ -968,9 +973,16 @@ select.input-field { cursor: pointer; }
 .card-head {
   font-family: var(--font-head);
   font-size: 16px;
-  font-weight: 700;
+  font-weight: 900;
+  text-align: center;
   margin-bottom: 14px;
+  background-color:#4b77bd;
+  border-radius: 10px;
+  padding: 8px 12px;
+  color: #faf8f8;
+  border: 1px solid var(--border);
 }
+
 
 .stack-list {
   display: flex;
