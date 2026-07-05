@@ -88,6 +88,8 @@ const uiBindings = [
   { selector: '#patStatLabelQueue', key: 'patient_dashboard.stat.queue' },
   { selector: '#patientCardHeadBestDoctor', key: 'patient_dashboard.best_doctor.title' },
   { selector: '#page-patient-dashboard label[for="suggestCondition"]', key: 'patient_dashboard.condition_label' },
+  { selector: '#page-patient-dashboard label[for="manualSuggestCondition"]', key: 'patient_dashboard.manual_condition_label' },
+  { selector: '#manualSuggestConditionHint', key: 'patient_dashboard.manual_condition_hint' },
   { selector: '#suggestBestDoctorsBtn', key: 'patient_dashboard.best_doctor.button' },
   { selector: '#patientCardHeadReviewSession', key: 'patient_dashboard.review_session.title' },
   { selector: '#page-patient-dashboard label[for="patientReviewSession"]', key: 'patient_dashboard.review_session.select_session' },
@@ -382,6 +384,49 @@ const specialtyByCondition = {
   back_pain: 'Orthopedics',
   skin_rash: 'Dermatology',
   vomiting: 'Gastroenterology'
+};
+
+const manualConditionKeywords = {
+  chest_pain: [
+    'chest pain', 'heart pain', 'heart attack', 'angina', 'palpitation', 'palpitations',
+    'high bp', 'high blood pressure', 'hypertension', 'cardiac', 'heart'
+  ],
+  fever: [
+    'fever', 'temperature', 'viral', 'flu', 'infection', 'body ache', 'body pain',
+    'malaria', 'dengue', 'typhoid', 'cold fever', 'weakness'
+  ],
+  headache: [
+    'headache', 'head pain', 'migraine', 'severe headache', 'half headache',
+    'brain pain', 'nerve pain', 'fits', 'seizure'
+  ],
+  cough: [
+    'cough', 'cold', 'sore throat', 'throat pain', 'runny nose', 'sneezing',
+    'khansi', 'coughing', 'congestion'
+  ],
+  breathlessness: [
+    'breathlessness', 'shortness of breath', 'breathing problem', 'breathing difficulty',
+    'asthma', 'wheezing', 'lungs', 'lung', 'oxygen', 'respiratory'
+  ],
+  stomach_pain: [
+    'stomach pain', 'abdominal pain', 'abdomen pain', 'acidity', 'gas', 'gastric',
+    'indigestion', 'loose motion', 'diarrhea', 'constipation', 'ulcer', 'stomach'
+  ],
+  dizziness: [
+    'dizziness', 'dizzy', 'vertigo', 'fainting', 'faint', 'chakkar', 'blackout',
+    'balance problem', 'light headed', 'lightheaded'
+  ],
+  back_pain: [
+    'back pain', 'lower back pain', 'spine pain', 'joint pain', 'knee pain',
+    'shoulder pain', 'bone pain', 'fracture', 'sprain', 'neck pain'
+  ],
+  skin_rash: [
+    'skin rash', 'rash', 'itching', 'itchy skin', 'allergy', 'skin allergy',
+    'pimples', 'acne', 'eczema', 'fungal', 'spots', 'red patches'
+  ],
+  vomiting: [
+    'vomiting', 'vomit', 'nausea', 'nauseous', 'motion sickness', 'food poisoning',
+    'throwing up', 'ulti', 'queasy'
+  ]
 };
 
 const doctorsDirectory = [
@@ -3519,6 +3564,70 @@ function renderDoctorProfile() {
   }
 }
 
+function normalizeConditionText(value) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function escapeHtml(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function resolveConditionKey(value) {
+  const normalized = normalizeConditionText(value);
+  if (!normalized) {
+    return '';
+  }
+
+  if (conditionLabels[normalized]) {
+    return normalized;
+  }
+
+  const underscored = normalized.replace(/\s+/g, '_');
+  if (conditionLabels[underscored]) {
+    return underscored;
+  }
+
+  const exactLabelMatch = Object.keys(conditionLabels).find((key) => {
+    return normalizeConditionText(conditionLabels[key]) === normalized;
+  });
+  if (exactLabelMatch) {
+    return exactLabelMatch;
+  }
+
+  let bestMatch = '';
+  let bestScore = 0;
+  Object.entries(manualConditionKeywords).forEach(([conditionKey, keywords]) => {
+    keywords.forEach((keyword) => {
+      const normalizedKeyword = normalizeConditionText(keyword);
+      if (!normalizedKeyword) {
+        return;
+      }
+      const isMatch = normalized === normalizedKeyword ||
+        normalized.includes(normalizedKeyword) ||
+        normalizedKeyword.includes(normalized);
+      if (!isMatch) {
+        return;
+      }
+      const score = normalizedKeyword.length;
+      if (score > bestScore) {
+        bestScore = score;
+        bestMatch = conditionKey;
+      }
+    });
+  });
+
+  return bestMatch || 'fever';
+}
+
 function scoreDoctorForCondition(doctor, conditionKey) {
   const specialtyNeeded = specialtyByCondition[conditionKey] || 'General Medicine';
   const hasSpecialty = doctor.specialties.includes(specialtyNeeded);
@@ -3526,14 +3635,15 @@ function scoreDoctorForCondition(doctor, conditionKey) {
   return base + (hasSpecialty ? 25 : 0);
 }
 
-function renderBestDoctorList(conditionKey) {
+function renderBestDoctorList(conditionKey, originalConditionText = '') {
   const list = byId('bestDoctorList');
   if (!list) {
     return;
   }
 
-  const safeCondition = conditionKey && conditionKey !== 'auto' ? conditionKey : 'fever';
+  const safeCondition = resolveConditionKey(conditionKey) || 'fever';
   const targetSpecialty = specialtyByCondition[safeCondition] || 'General Medicine';
+  const conditionName = t(`condition.${safeCondition}`) || conditionLabels[safeCondition] || conditionLabels.fever;
 
   // Combine hardcoded and registered doctors
   let allDoctors = [...doctorsDirectory];
@@ -3553,12 +3663,20 @@ function renderBestDoctorList(conditionKey) {
     }
   });
 
-  const ranked = allDoctors
+  const matchingSpecialtyDoctors = allDoctors.filter((doctor) => doctor.specialties.includes(targetSpecialty));
+  const doctorsToRank = matchingSpecialtyDoctors.length ? matchingSpecialtyDoctors : allDoctors;
+
+  const ranked = doctorsToRank
     .slice()
     .sort((a, b) => scoreDoctorForCondition(b, safeCondition) - scoreDoctorForCondition(a, safeCondition))
     .slice(0, 3);
 
-  list.innerHTML = ranked
+  const typedText = String(originalConditionText || '').trim();
+  const matchedNotice = typedText
+    ? `<div class="form-msg">${t('best_doctor.matched_as', { input: escapeHtml(typedText), condition: escapeHtml(conditionName), specialty: escapeHtml(getSpecialtyLabel(targetSpecialty)) })}</div>`
+    : `<div class="form-msg">${t('best_doctor.showing_for', { condition: escapeHtml(conditionName), specialty: escapeHtml(getSpecialtyLabel(targetSpecialty)) })}</div>`;
+
+  list.innerHTML = matchedNotice + ranked
     .map((doctor, index) => {
       const match = doctor.specialties.includes(targetSpecialty) ? t('best_doctor.best_match') : t('best_doctor.alternative');
       const specialties = doctor.specialties.map((item) => getSpecialtyLabel(item)).join(', ');
@@ -3582,14 +3700,18 @@ function suggestBestDoctors() {
   }
 
   const selector = byId('suggestCondition');
+  const manualInput = byId('manualSuggestCondition');
+  const manualCondition = manualInput ? manualInput.value.trim() : '';
   let selected = selector ? selector.value : 'auto';
 
-  if (selected === 'auto') {
+  if (manualCondition) {
+    selected = manualCondition;
+  } else if (selected === 'auto') {
     const profile = getPatientProfile(currentUserName);
     selected = profile.lastCondition || 'fever';
   }
 
-  renderBestDoctorList(selected);
+  renderBestDoctorList(selected, manualCondition);
 }
 
 function renderQueue() {

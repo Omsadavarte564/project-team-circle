@@ -412,6 +412,16 @@
             <option value="vomiting">Vomiting/Nausea</option>
           </select>
         </div>
+        <div class="input-group">
+          <label class="input-label" for="manualSuggestCondition">Or type your condition</label>
+          <input
+            class="input-field"
+            id="manualSuggestCondition"
+            type="text"
+            placeholder="Example: migraine, acidity, breathing problem"
+          />
+          <div class="input-hint" id="manualSuggestConditionHint">Typed condition is used first when filled.</div>
+        </div>
         <button class="btn-primary" id="suggestBestDoctorsBtn" onclick="suggestBestDoctors()">🔎 Suggest Best Doctors</button>
         <div id="bestDoctorList" class="stack-list"></div>
       </div>

@@ -97,6 +97,8 @@
   "patient_dashboard.best_doctor.button": "🔎 Suggest Best Doctors",
   "patient_dashboard.best_doctor.use_latest": "Use my latest analyzed condition",
   "patient_dashboard.condition_label": "Condition",
+  "patient_dashboard.manual_condition_label": "Or type your condition",
+  "patient_dashboard.manual_condition_hint": "Typed condition is used first when filled.",
   "patient_dashboard.review_session.title": "Review Session",
   "patient_dashboard.review_session.select_session": "Select Session",
   "patient_dashboard.review_session.select_doctor": "Select Doctor",
@@ -329,6 +331,8 @@
 
   "best_doctor.best_match": "Best match",
   "best_doctor.alternative": "Alternative",
+  "best_doctor.matched_as": "Matched \"{input}\" as {condition}. Showing {specialty} doctors.",
+  "best_doctor.showing_for": "Showing doctors for {condition} ({specialty}).",
 
   "specialty.cardiology": "Cardiology",
   "specialty.general_medicine": "General Medicine",
