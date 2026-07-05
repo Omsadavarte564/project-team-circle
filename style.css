@@ -369,6 +369,12 @@ background-color: var(--surface2); }
 }
 .input-field:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(47,158,103,0.12); }
 .input-field option { background: #ffffff; }
+.input-hint {
+  margin-top: 6px;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
 
 .symptom-chips {
   display: flex;

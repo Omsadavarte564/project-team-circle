@@ -97,6 +97,8 @@
   "patient_dashboard.best_doctor.button": "🔎 सर्वोत्तम डॉक्टर सुचवा",
   "patient_dashboard.best_doctor.use_latest": "माझी अलीकडील विश्लेषित स्थिती वापरा",
   "patient_dashboard.condition_label": "स्थिती",
+  "patient_dashboard.manual_condition_label": "तुमची स्थिती लिहा",
+  "patient_dashboard.manual_condition_hint": "लिहिलेली स्थिती आधी वापरली जाईल.",
   "patient_dashboard.review_session.title": "सत्र पुनरावलोकन",
   "patient_dashboard.review_session.select_session": "सत्र निवडा",
   "patient_dashboard.review_session.select_doctor": "डॉक्टर निवडा",
@@ -323,6 +325,8 @@
 
   "best_doctor.best_match": "सर्वोत्तम जुळणारा",
   "best_doctor.alternative": "पर्यायी",
+  "best_doctor.matched_as": "\"{input}\" ला {condition} म्हणून जुळवले. {specialty} डॉक्टर दाखवत आहोत.",
+  "best_doctor.showing_for": "{condition} ({specialty}) साठी डॉक्टर दाखवत आहोत.",
 
   "specialty.cardiology": "कार्डिओलॉजी",
   "specialty.general_medicine": "जनरल मेडिसिन",

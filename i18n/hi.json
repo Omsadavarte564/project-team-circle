@@ -97,6 +97,8 @@
   "patient_dashboard.best_doctor.button": "🔎 सर्वश्रेष्ठ डॉक्टर सुझाएं",
   "patient_dashboard.best_doctor.use_latest": "मेरी हाल की जांची हुई स्थिति उपयोग करें",
   "patient_dashboard.condition_label": "स्थिति",
+  "patient_dashboard.manual_condition_label": "अपनी स्थिति लिखें",
+  "patient_dashboard.manual_condition_hint": "लिखी हुई स्थिति पहले उपयोग होगी।",
   "patient_dashboard.review_session.title": "सत्र समीक्षा",
   "patient_dashboard.review_session.select_session": "सत्र चुनें",
   "patient_dashboard.review_session.select_doctor": "डॉक्टर चुनें",
@@ -323,6 +325,8 @@
 
   "best_doctor.best_match": "सबसे अच्छा मेल",
   "best_doctor.alternative": "वैकल्पिक",
+  "best_doctor.matched_as": "\"{input}\" को {condition} माना गया। {specialty} डॉक्टर दिखाए जा रहे हैं।",
+  "best_doctor.showing_for": "{condition} ({specialty}) के लिए डॉक्टर दिखाए जा रहे हैं।",
 
   "specialty.cardiology": "कार्डियोलॉजी",
   "specialty.general_medicine": "जनरल मेडिसिन",
