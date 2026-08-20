@@ -3,7 +3,7 @@
 // Supports English, Hindi, and Marathi
 
 const AI_API_KEY_STORAGE = 'medreach_groq_api_key';
-const DEFAULT_GROQ_KEY = '__GROQ_API_KEY__';
+const DEFAULT_GROQ_KEY = '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';
 
 // ---- Multilingual Labels ----
 const aiLabels = {
@@ -115,14 +115,8 @@ function getLanguageNameForAI(code) {
 }
 
 // ---- API Key Management ----
-function isKeyInjected() {
-  // A real Groq key starts with 'gsk_' and is long. The placeholder is '__GROQ_API_KEY__'.
-  return DEFAULT_GROQ_KEY && DEFAULT_GROQ_KEY.length > 20 && DEFAULT_GROQ_KEY.indexOf('gsk_') === 0;
-}
-
 function getAIApiKey() {
-  // Check if the build-time key was injected (not the placeholder)
-  if (isKeyInjected()) return DEFAULT_GROQ_KEY;
+  if (DEFAULT_GROQ_KEY) return DEFAULT_GROQ_KEY;
   try { return localStorage.getItem(AI_API_KEY_STORAGE) || ''; }
   catch (e) { return ''; }
 }
@@ -156,8 +150,8 @@ function showAIKeyInput() {
 function refreshAIKeyUI() {
   var section = document.getElementById('aiKeySection');
   var status = document.getElementById('aiKeyStatus');
-  // If a real key was injected at build time, hide both sections completely
-  if (isKeyInjected()) {
+  // If hardcoded key exists, hide both sections completely
+  if (DEFAULT_GROQ_KEY) {
     if (section) section.classList.add('hidden');
     if (status) status.classList.add('hidden');
     return;
@@ -228,7 +222,7 @@ async function callGroqAPI(prompt) {
         'Authorization': 'Bearer ' + apiKey
       },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
+        model: 'llama-3.1-70b-versatile',
         messages: [
           {
             role: 'system',
