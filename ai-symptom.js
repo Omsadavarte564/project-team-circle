@@ -164,7 +164,7 @@ function refreshAIKeyUI() {
 // ---- Prompt Builder ----
 function buildDoctorContextForAI() {
   if (typeof doctorsDirectory === 'undefined') return '';
-  return doctorsDirectory.map(function(d) {
+  return doctorsDirectory.map(function (d) {
     return '- ' + d.name + ' (ID: ' + d.id + '): ' + d.specialties.join(', ') +
       ', ' + d.rating + '★, ' + d.experience + ' years experience, ' + d.hospital;
   }).join('\n');
@@ -222,7 +222,7 @@ async function callGroqAPI(prompt) {
         'Authorization': 'Bearer ' + apiKey
       },
       body: JSON.stringify({
-        model: 'llama-3.1-70b-versatile',
+        model: 'openai/gpt-oss-20b',
         messages: [
           {
             role: 'system',
@@ -234,21 +234,20 @@ async function callGroqAPI(prompt) {
           }
         ],
         temperature: 0.3,
-        max_tokens: 1500,
-        response_format: { type: 'json_object' }
+        max_tokens: 1500
       })
     });
 
     if (!response.ok) {
       var errData = {};
-      try { errData = await response.json(); } catch(e) {}
+      try { errData = await response.json(); } catch (e) { }
       var errMsg = (errData && errData.error && errData.error.message) ? errData.error.message : 'API error ' + response.status;
       return { success: false, error: 'api_error', message: errMsg };
     }
 
     var data = await response.json();
     var text = '';
-    try { text = data.choices[0].message.content; } catch(e) {}
+    try { text = data.choices[0].message.content; } catch (e) { }
 
     if (!text) {
       return { success: false, error: 'empty_response', message: aiL('errorApi') };
@@ -356,7 +355,7 @@ function renderAIResult(data) {
   // Find doctor details from directory
   var doctor = null;
   if (data.doctorId && typeof doctorsDirectory !== 'undefined') {
-    doctor = doctorsDirectory.find(function(d) { return d.id === data.doctorId; });
+    doctor = doctorsDirectory.find(function (d) { return d.id === data.doctorId; });
   }
 
   var html = '';
@@ -379,7 +378,7 @@ function renderAIResult(data) {
   html += '<div class="ai-section-label">' + aiL('suggestedMeds') + '</div>';
   if (data.medicines && data.medicines.length) {
     html += '<ul class="medicines-list">';
-    data.medicines.forEach(function(med) {
+    data.medicines.forEach(function (med) {
       html += '<li class="med-chip">💊 ' + med + '</li>';
     });
     html += '</ul>';
@@ -399,7 +398,7 @@ function renderAIResult(data) {
     html += '  <div class="ai-doctor-details">';
     html += '    <div class="ai-doctor-name">' + (doctor ? doctor.name : data.doctorName || '') + '</div>';
     if (doctor) {
-      var specLabels = doctor.specialties.map(function(s) {
+      var specLabels = doctor.specialties.map(function (s) {
         return (typeof getSpecialtyLabel === 'function') ? getSpecialtyLabel(s) : s;
       });
       html += '    <div class="ai-doctor-spec">' + specLabels.join(' · ') + '</div>';
@@ -424,7 +423,7 @@ function renderAIResult(data) {
     html += '<div class="divider"></div>';
     html += '<div class="ai-section-label">' + aiL('followUp') + '</div>';
     html += '<div class="ai-followup-chips">';
-    data.followUpQuestions.forEach(function(q) {
+    data.followUpQuestions.forEach(function (q) {
       var escaped = q.replace(/'/g, "\\'").replace(/"/g, '&quot;');
       html += '<div class="chip ai-followup-chip" onclick="handleFollowUpClick(\'' + escaped + '\')">' + q + '</div>';
     });
@@ -451,7 +450,7 @@ function bookDoctorFromAI(doctorId) {
     goPage('book-session');
   }
   // Pre-select the doctor in the booking form
-  setTimeout(function() {
+  setTimeout(function () {
     var doctorSelect = document.getElementById('bookingDoctor');
     if (doctorSelect && doctorId) {
       doctorSelect.value = doctorId;
@@ -509,7 +508,7 @@ function addAIResultToQueue() {
     patientQueue.push(p);
   }
 
-  patientQueue.sort(function(a, b) {
+  patientQueue.sort(function (a, b) {
     var order = { critical: 0, medium: 1, low: 2 };
     return (order[a.severity] || 2) - (order[b.severity] || 2);
   });
@@ -536,7 +535,7 @@ function updateAILabels() {
     aiAnalyzeBtn: 'askButton'
   };
 
-  Object.keys(els).forEach(function(elId) {
+  Object.keys(els).forEach(function (elId) {
     var el = document.getElementById(elId);
     if (el) el.textContent = aiL(els[elId]);
   });
@@ -566,7 +565,7 @@ function initAISection() {
 
 // Auto-init when DOM is ready
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', function() {
+  document.addEventListener('DOMContentLoaded', function () {
     setTimeout(initAISection, 100);
   });
 } else {
