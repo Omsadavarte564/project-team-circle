@@ -1205,26 +1205,105 @@ function syncRegisterRoleTitle() {
 }
 
 function openRegisterForm(role = 'patient') {
-  const registerForm = byId('registerForm');
   const roleEl = byId('registerRole');
-  if (!registerForm || !roleEl) {
-    return;
+  if (roleEl) {
+    roleEl.value = role === 'doctor' ? 'doctor' : 'patient';
+    syncRegisterRoleTitle();
   }
-
-  roleEl.value = role === 'doctor' ? 'doctor' : 'patient';
-  syncRegisterRoleTitle();
-  registerForm.classList.remove('hidden');
+  switchTab('register');
   setRegisterError('');
 }
 
 function closeRegisterForm() {
-  const registerForm = byId('registerForm');
-  if (!registerForm) {
-    return;
-  }
-
-  registerForm.classList.add('hidden');
+  switchTab('login');
   setRegisterError('');
+}
+
+function switchTab(tab) {
+  const loginFormContainer = byId('loginFormContainer');
+  const registerFormContainer = byId('registerFormContainer');
+  const forgotPasswordForm = byId('forgotPasswordForm');
+  const loginTab = byId('loginTab');
+  const registerTab = byId('registerTab');
+
+  if (forgotPasswordForm) forgotPasswordForm.classList.add('hidden');
+
+  if (tab === 'login') {
+    if (loginFormContainer) loginFormContainer.classList.remove('hidden');
+    if (registerFormContainer) registerFormContainer.classList.add('hidden');
+    if (loginTab) loginTab.classList.add('active');
+    if (registerTab) registerTab.classList.remove('active');
+  } else if (tab === 'register') {
+    if (loginFormContainer) loginFormContainer.classList.add('hidden');
+    if (registerFormContainer) registerFormContainer.classList.remove('hidden');
+    if (loginTab) loginTab.classList.remove('active');
+    if (registerTab) registerTab.classList.add('active');
+    syncRegisterRoleTitle();
+  }
+}
+
+function showForgotPassword() {
+  const loginFormContainer = byId('loginFormContainer');
+  const registerFormContainer = byId('registerFormContainer');
+  const forgotPasswordForm = byId('forgotPasswordForm');
+  
+  if (loginFormContainer) loginFormContainer.classList.add('hidden');
+  if (registerFormContainer) registerFormContainer.classList.add('hidden');
+  if (forgotPasswordForm) forgotPasswordForm.classList.remove('hidden');
+}
+
+function hideForgotPassword() {
+  switchTab('login');
+}
+
+function sendOtp() {
+  alert(t('auth.otp_sent') || 'OTP sent successfully (Simulated)');
+  const otpGroup = byId('otpGroup');
+  if (otpGroup) otpGroup.style.display = 'block';
+}
+
+function verifyOtp() {
+  alert(t('auth.otp_verified') || 'OTP verified successfully (Simulated)');
+}
+
+function getLiveLocation() {
+  alert(t('auth.location_fetched') || 'Location fetched successfully (Simulated)');
+  const addressEl = byId('registerAddress');
+  if (addressEl) addressEl.value = '123 Main St, Rural District';
+}
+
+function sendPasswordResetOtp(event) {
+  if (event) event.preventDefault();
+  alert('Password reset OTP sent (Simulated)');
+  const resetForm = byId('resetPasswordForm');
+  const otpForm = byId('resetOtpForm');
+  if (resetForm) resetForm.classList.add('hidden');
+  if (otpForm) otpForm.classList.remove('hidden');
+}
+
+function verifyResetOtp(event) {
+  if (event) event.preventDefault();
+  alert('OTP verified (Simulated)');
+  const otpForm = byId('resetOtpForm');
+  const newPwdForm = byId('resetPasswordNewForm');
+  if (otpForm) otpForm.classList.add('hidden');
+  if (newPwdForm) newPwdForm.classList.remove('hidden');
+}
+
+function setNewPassword(event) {
+  if (event) event.preventDefault();
+  alert('Password updated successfully (Simulated)');
+  hideForgotPassword();
+}
+
+function validateNewPassword() {}
+function validateConfirmNewPassword() {}
+
+function backToResetUsername() {
+  const resetForm = byId('resetPasswordForm');
+  const otpForm = byId('resetOtpForm');
+  if (otpForm) otpForm.classList.add('hidden');
+  if (resetForm) resetForm.classList.remove('hidden');
 }
 
 function clearSymptomSelection() {
